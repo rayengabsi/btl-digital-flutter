@@ -1,6 +1,7 @@
 name: btl_digital
 description: "BTL Digital Banking Mobile Application"
-publish_to: 'none'
+publish_to: "none"
+
 version: 1.0.0+1
 
 environment:
@@ -35,7 +36,7 @@ dependencies:
   equatable: ^2.0.7
   flutter_dotenv: ^5.2.0
 
-  # Code Generation (annotations)
+  # Code Generation Annotations
   json_annotation: ^4.9.0
   freezed_annotation: ^2.4.4
 
@@ -50,6 +51,9 @@ dev_dependencies:
   json_serializable: ^6.9.2
   freezed: ^2.5.8
 
+  # App Icon Generator
+  flutter_launcher_icons: ^0.14.4
+
 flutter:
   uses-material-design: true
 
@@ -59,3 +63,12 @@ flutter:
     - assets/logos/
     - assets/cards/
     - assets/animations/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+
+  image_path: "assets/icons/app_icon.png"
+
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
