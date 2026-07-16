@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
@@ -76,7 +77,10 @@ class _OnboardingContent extends StatelessWidget {
       children: [
         const _OnboardingCopy(),
         const SizedBox(height: 64),
-        ElevatedButton(onPressed: () {}, child: const Text('Get Started')),
+        ElevatedButton(
+          onPressed: () => context.goNamed('login'),
+          child: const Text('Get Started'),
+        ),
         const SizedBox(height: 20),
         const _SignInPrompt(),
       ],
