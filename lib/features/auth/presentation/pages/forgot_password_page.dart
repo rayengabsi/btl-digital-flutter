@@ -25,6 +25,20 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
+      appBar: AppBar(
+        backgroundColor: AppColors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.goNamed('login');
+            }
+          },
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -68,8 +82,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                   const SizedBox(height: AppDimensions.paddingXL),
                   const _ResetInfoCard(),
-                  const SizedBox(height: AppDimensions.paddingXL),
-                  const _BackToSignIn(),
                   const SizedBox(height: AppDimensions.paddingXL),
                 ],
               ),
@@ -143,32 +155,6 @@ class _ResetInfoCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BackToSignIn extends StatelessWidget {
-  const _BackToSignIn();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: TextButton(
-        onPressed: () => context.goNamed('login'),
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryRed,
-          minimumSize: Size.zero,
-          padding: EdgeInsets.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          'Back to Sign In',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.primaryRed,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
       ),
     );
   }

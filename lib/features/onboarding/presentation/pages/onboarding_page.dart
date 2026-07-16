@@ -78,7 +78,7 @@ class _OnboardingContent extends StatelessWidget {
         const _OnboardingCopy(),
         const SizedBox(height: 64),
         ElevatedButton(
-          onPressed: () => context.goNamed('login'),
+          onPressed: () => context.goNamed('register'),
           child: const Text('Get Started'),
         ),
         const SizedBox(height: 20),
@@ -134,7 +134,7 @@ class _SignInPrompt extends StatelessWidget {
           ),
         ),
         TextButton(
-          onPressed: () {},
+          onPressed: () => context.goNamed('login'),
           style: TextButton.styleFrom(
             foregroundColor: const Color(0xFFD5042B),
             minimumSize: Size.zero,
