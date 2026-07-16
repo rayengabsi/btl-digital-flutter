@@ -16,7 +16,7 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage>
     with SingleTickerProviderStateMixin {
-  static const Duration _splashDuration = Duration(seconds: 2);
+  static const Duration _splashDuration = Duration(seconds: 3, milliseconds: 500);
   static const Duration _fadeDuration = Duration(milliseconds: 650);
   static const double _brandTopFactor = 0.255;
 
