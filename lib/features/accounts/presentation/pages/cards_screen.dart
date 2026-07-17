@@ -103,8 +103,8 @@ const _quickActions = [
 
 // ─── Card image assets ────────────────────────────────────────────────────────
 const _cardImages = [
-  'assets/images/cards/card_first.png',
-  'assets/images/cards/card_second.png',
+  'assets/images/Cards/card_first.png',
+  'assets/images/Cards/card_second.png',
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -120,7 +120,8 @@ class CardsScreen extends StatefulWidget {
   State<CardsScreen> createState() => _CardsScreenState();
 }
 
-class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin {
+class _CardsScreenState extends State<CardsScreen>
+    with TickerProviderStateMixin {
   // Bottom nav – start on Cards tab (index 1)
   int _navIndex = 1;
 
@@ -144,7 +145,9 @@ class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin
   void initState() {
     super.initState();
 
-    _pageCtrl = PageController(viewportFraction: 0.88);
+    // viewportFraction 0.80 → active card = 80% of screen width,
+    // adjacent card peek ≈ 10% on each side — classic Revolut/Monzo pattern.
+    _pageCtrl = PageController(viewportFraction: 0.80);
     _pageCtrl.addListener(_onPageScroll);
 
     // Transaction list fade
@@ -246,7 +249,9 @@ class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin
                           SliverToBoxAdapter(child: _buildTransactions()),
 
                           // Nav clearance
-                          const SliverToBoxAdapter(child: SizedBox(height: 112)),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 112),
+                          ),
                         ],
                       ),
                     ),
@@ -305,7 +310,11 @@ class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin
           ),
           _CircleBtn(
             onTap: () {},
-            child: const Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 22),
+            child: const Icon(
+              Icons.add_rounded,
+              color: AppColors.textPrimary,
+              size: 22,
+            ),
           ),
         ],
       ),
@@ -313,39 +322,46 @@ class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin
   }
 
   // ── Card carousel ─────────────────────────────────────────────────────────
+  //
+  // viewportFraction = 0.80  →  active card occupies 80 % of the screen width
+  // and is perfectly centred (PageView default padEnds = true).
+  // Each adjacent card peeks ~10 % on its respective side — the same pattern
+  // used by Revolut, Monzo and N26.
   Widget _buildCardCarousel() {
     return Padding(
-      padding: const EdgeInsets.only(top: 28, bottom: 4),
+      // Reduced vertical spacing so the card feels connected to the title
+      // and the section below it.
+      padding: const EdgeInsets.only(top: 20, bottom: 8),
       child: SizedBox(
-        height: 210,
+        // Taller card for a premium, dominant visual impression.
+        height: 220,
         child: PageView.builder(
           controller: _pageCtrl,
           itemCount: _cardImages.length,
+          // BouncingScrollPhysics gives the natural feel requested
+          // (always snaps to the nearest page, never stops mid-swipe).
           physics: const BouncingScrollPhysics(),
           itemBuilder: (context, index) {
             return AnimatedBuilder(
               animation: _pageCtrl,
               builder: (context, child) {
+                // --- Scale animation ---
+                // Active card  → scale 1.0  (full size)
+                // Adjacent     → scale 0.96 (subtle shrink, no rotation / 3-D)
                 double scale = 1.0;
                 if (_pageCtrl.position.hasContentDimensions) {
-                  final page = _pageCtrl.page ?? 0;
-                  final diff = (page - index).abs();
-                  // Cards that are not active scale down slightly
-                  scale = (1.0 - (diff * 0.06)).clamp(0.90, 1.0);
+                  final page = _pageCtrl.page ?? 0.0;
+                  final diff = (page - index).abs().clamp(0.0, 1.0);
+                  scale = 1.0 - (diff * 0.04); // 1.0 → 0.96
                 }
-                return Transform.scale(
-                  scale: scale,
-                  child: child,
-                );
+                return Transform.scale(scale: scale, child: child);
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                // Small horizontal gap between cards
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.asset(
-                    _cardImages[index],
-                    fit: BoxFit.cover,
-                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Image.asset(_cardImages[index], fit: BoxFit.cover),
                 ),
               ),
             );
@@ -358,7 +374,8 @@ class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin
   // ── Quick actions ─────────────────────────────────────────────────────────
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      // Slightly tighter top gap so the section flows naturally from the card.
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: _quickActions.map((a) => _ActionBtn(action: a)).toList(),
@@ -459,10 +476,7 @@ class _CardsScreenState extends State<CardsScreen> with TickerProviderStateMixin
                         if (i < txList.length - 1)
                           Padding(
                             padding: const EdgeInsets.only(top: 16),
-                            child: Divider(
-                              height: 1,
-                              color: AppColors.divider,
-                            ),
+                            child: Divider(height: 1, color: AppColors.divider),
                           ),
                       ],
                     );
@@ -498,7 +512,9 @@ class _TxRow extends StatelessWidget {
           child: Icon(
             tx.icon,
             size: 22,
-            color: tx.isIncome ? AppColors.primaryGreen : AppColors.textSecondary,
+            color: tx.isIncome
+                ? AppColors.primaryGreen
+                : AppColors.textSecondary,
           ),
         ),
         const SizedBox(width: 14),
@@ -528,7 +544,9 @@ class _TxRow extends StatelessWidget {
         Text(
           tx.amount,
           style: AppTypography.bodyMedium.copyWith(
-            color: tx.isIncome ? AppColors.primaryGreen : const Color(0xFF111827),
+            color: tx.isIncome
+                ? AppColors.primaryGreen
+                : const Color(0xFF111827),
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
