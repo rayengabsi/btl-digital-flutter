@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../accounts/presentation/pages/accounts_page.dart';
 import '../widgets/btl_bottom_nav.dart';
 import '../widgets/transactions_card.dart';
 import '../widgets/wallet_card.dart';
@@ -56,8 +57,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Make status bar icons dark on the light header area
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+
+    // When a non-Home tab is selected, delegate fully to that screen
+    // (which carries its own background + bottom nav).
+    if (_navIndex == 1) {
+      return AccountsPage(onNavTap: (i) => setState(() => _navIndex = i));
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -71,7 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
 
-          // ── Scrollable content + bottom nav ─────────────────────────
+          // ── Scrollable content ──────────────────────────────────────
           SafeArea(
             child: FadeTransition(
               opacity: _fadeAnim,
