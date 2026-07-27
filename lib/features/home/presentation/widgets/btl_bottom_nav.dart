@@ -33,9 +33,9 @@ const List<_NavItem> _navItems = [
     iconInactive: Icons.swap_horiz_rounded,
   ),
   _NavItem(
-    label: 'Settings',
-    iconActive: Icons.settings_rounded,
-    iconInactive: Icons.settings_outlined,
+    label: 'Profile',
+    iconActive: Icons.person_rounded,
+    iconInactive: Icons.person_outline_rounded,
   ),
 ];
 
