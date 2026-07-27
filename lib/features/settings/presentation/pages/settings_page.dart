@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'settings_screen.dart';
+
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.onNavTap});
+
+  final ValueChanged<int>? onNavTap;
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Settings'),
-      ),
-    );
+    return SettingsScreen(onNavTap: onNavTap);
   }
 }

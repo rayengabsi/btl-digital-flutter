@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../accounts/presentation/pages/accounts_page.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 import '../../../transfers/presentation/pages/transfers_page.dart';
 import '../widgets/btl_bottom_nav.dart';
 import '../widgets/transactions_card.dart';
@@ -68,6 +69,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     if (_navIndex == 2) {
       return TransfersPage(onNavTap: (i) => setState(() => _navIndex = i));
+    }
+
+    if (_navIndex == 3) {
+      return SettingsPage(onNavTap: (i) => setState(() => _navIndex = i));
     }
 
     return Scaffold(
