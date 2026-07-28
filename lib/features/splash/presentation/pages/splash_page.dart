@@ -1,20 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_state.dart';
 
-class SplashPage extends StatefulWidget {
+class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
+class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
   static const Duration _splashDuration = Duration(seconds: 3, milliseconds: 500);
   static const Duration _fadeDuration = Duration(milliseconds: 650);
@@ -39,12 +42,9 @@ class _SplashPageState extends State<SplashPage>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       _controller.forward();
-      _timer = Timer(_splashDuration, _goToOnboarding);
+      _timer = Timer(_splashDuration, _checkSession);
     });
   }
 
@@ -55,16 +55,35 @@ class _SplashPageState extends State<SplashPage>
     super.dispose();
   }
 
-  void _goToOnboarding() {
-    if (!mounted) {
-      return;
-    }
+  void _checkSession() {
+    if (!mounted) return;
+    ref.read(authControllerProvider.notifier).checkAuthStatus();
+  }
 
-    context.goNamed('onboarding');
+  void _onAuthStateChanged(AuthState state) {
+    if (!mounted) return;
+
+    switch (state) {
+      case AuthAuthenticated():
+        context.goNamed('home');
+      case AuthUnauthenticated():
+        context.goNamed('onboarding');
+      case AuthLoading():
+      case AuthInitial():
+        break;
+      case AuthError():
+        context.goNamed('onboarding');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authControllerProvider, (previous, next) {
+      if (next is! AuthLoading && next is! AuthInitial) {
+        _onAuthStateChanged(next);
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: LayoutBuilder(

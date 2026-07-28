@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../providers/auth_provider.dart';
+import '../providers/auth_state.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -24,8 +28,37 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  void _onLogin() {
+    if (!_formKey.currentState!.validate()) return;
+
+    ref.read(authControllerProvider.notifier).login(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(authControllerProvider, (previous, next) {
+      if (next case AuthAuthenticated()) {
+        context.goNamed('home');
+      } else if (next case AuthError(:final message)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.primaryRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+            ),
+          ),
+        );
+      }
+    });
+
+    final authState = ref.watch(authControllerProvider);
+    final isLoading = authState is AuthLoading;
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -40,49 +73,62 @@ class _LoginPageState extends State<LoginPage> {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: size.height),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: size.height * 0.08),
-                    const _LoginHeader(),
-                    SizedBox(height: size.height * 0.06),
-                    _EmailField(controller: _emailController),
-                    const SizedBox(height: AppDimensions.paddingM),
-                    _PasswordField(
-                      controller: _passwordController,
-                      obscure: _obscurePassword,
-                      onToggle: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    const SizedBox(height: AppDimensions.paddingS),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => context.pushNamed('forgotPassword'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primaryGreen,
-                          minimumSize: Size.zero,
-                          padding: EdgeInsets.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: size.height * 0.08),
+                      const _LoginHeader(),
+                      SizedBox(height: size.height * 0.06),
+                      _EmailField(controller: _emailController),
+                      const SizedBox(height: AppDimensions.paddingM),
+                      _PasswordField(
+                        controller: _passwordController,
+                        obscure: _obscurePassword,
+                        onToggle: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
                         ),
-                        child: Text(
-                          'Forgot Password?',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.primaryGreen,
-                            fontWeight: FontWeight.w600,
+                      ),
+                      const SizedBox(height: AppDimensions.paddingS),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => context.pushNamed('forgotPassword'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primaryGreen,
+                            minimumSize: Size.zero,
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Forgot Password?',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.primaryGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: size.height * 0.04),
-                    ElevatedButton(
-                      onPressed: () => context.goNamed('home'),
-                      child: const Text('Sign In'),
-                    ),
-                    SizedBox(height: size.height * 0.06),
-                    const _SignUpPrompt(),
-                    const SizedBox(height: AppDimensions.paddingXL),
-                  ],
+                      SizedBox(height: size.height * 0.04),
+                      ElevatedButton(
+                        onPressed: isLoading ? null : _onLogin,
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.white,
+                                ),
+                              )
+                            : const Text('Sign In'),
+                      ),
+                      SizedBox(height: size.height * 0.06),
+                      const _SignUpPrompt(),
+                      const SizedBox(height: AppDimensions.paddingXL),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -142,10 +188,20 @@ class _EmailField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppDimensions.paddingS),
-        TextField(
+        TextFormField(
           controller: controller,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Email is required';
+            }
+            final emailRegex = RegExp(r'^[\w-]+@([\w-]+\.)+[\w-]{2,}$');
+            if (!emailRegex.hasMatch(value.trim())) {
+              return 'Please enter a valid email';
+            }
+            return null;
+          },
           decoration: const InputDecoration(hintText: 'Enter your email'),
         ),
       ],
@@ -176,10 +232,19 @@ class _PasswordField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppDimensions.paddingS),
-        TextField(
+        TextFormField(
           controller: controller,
           obscureText: obscure,
           textInputAction: TextInputAction.done,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Password is required';
+            }
+            if (value.length < 6) {
+              return 'Password must be at least 6 characters';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             hintText: 'Enter your password',
             suffixIcon: IconButton(

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
-class BtlDrawer extends StatelessWidget {
+class BtlDrawer extends ConsumerWidget {
   const BtlDrawer({super.key, this.onProfileTap});
 
   final VoidCallback? onProfileTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
       backgroundColor: AppColors.white,
       elevation: 0,
@@ -159,7 +162,11 @@ class BtlDrawer extends StatelessWidget {
 
                     // Log Out
                     InkWell(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        ref.read(authControllerProvider.notifier).logout();
+                        context.goNamed('login');
+                      },
                       borderRadius: BorderRadius.circular(AppDimensions.radiusL),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),

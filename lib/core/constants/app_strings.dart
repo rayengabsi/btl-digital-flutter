@@ -7,5 +7,6 @@ abstract final class AppStrings {
   static const String refreshTokenKey = 'refresh_token';
   static const String userIdKey = 'user_id';
   static const String userEmailKey = 'user_email';
+  static const String userRoleKey = 'user_role';
   static const String onboardingCompleteKey = 'onboarding_complete';
 }
