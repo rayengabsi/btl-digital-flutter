@@ -1,9 +1,12 @@
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/services/token_storage_service.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../models/forgot_password_request.dart';
 import '../models/login_request.dart';
 import '../models/login_response.dart';
 import '../models/register_request.dart';
+import '../models/reset_password_request.dart';
+import '../models/reset_password_response.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -43,6 +46,36 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       throw const ApiException(
         message: 'Failed to register. Please try again.',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<ResetPasswordResponse> forgotPassword(
+      ForgotPasswordRequest request) async {
+    try {
+      return await _remoteDataSource.forgotPassword(request);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw const ApiException(
+        message: 'Failed to send reset link. Please try again.',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<ResetPasswordResponse> resetPassword(
+      ResetPasswordRequest request) async {
+    try {
+      return await _remoteDataSource.resetPassword(request);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw const ApiException(
+        message: 'Failed to reset password. Please try again.',
         statusCode: 500,
       );
     }

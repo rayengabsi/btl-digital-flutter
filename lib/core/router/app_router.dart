@@ -6,6 +6,7 @@ import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/auth/presentation/pages/reset_password_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 
 abstract final class AppRouter {
@@ -40,6 +41,14 @@ abstract final class AppRouter {
         path: '/forgot-password',
         name: 'forgotPassword',
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        name: 'resetPassword',
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          return ResetPasswordPage(initialToken: token);
+        },
       ),
       GoRoute(
         path: '/home',
