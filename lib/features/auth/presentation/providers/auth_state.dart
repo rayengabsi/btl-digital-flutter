@@ -5,6 +5,7 @@ sealed class AuthState {
   const factory AuthState.loading() = AuthLoading;
   const factory AuthState.authenticated({required String email, required String role}) = AuthAuthenticated;
   const factory AuthState.unauthenticated() = AuthUnauthenticated;
+  const factory AuthState.registrationSuccess() = AuthRegistrationSuccess;
   const factory AuthState.error({required String message}) = AuthError;
 }
 
@@ -25,6 +26,10 @@ class AuthAuthenticated extends AuthState {
 
 class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
+}
+
+class AuthRegistrationSuccess extends AuthState {
+  const AuthRegistrationSuccess();
 }
 
 class AuthError extends AuthState {

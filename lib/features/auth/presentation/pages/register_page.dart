@@ -26,6 +26,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
+  bool _isShowingDialog = false;
 
   @override
   void dispose() {
@@ -66,11 +67,37 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         );
   }
 
+  void _showSuccessDialog() {
+    if (_isShowingDialog) return;
+    _isShowingDialog = true;
+
+    FocusScope.of(context).unfocus();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (ctx) => _AccountCreatedDialog(
+        onSignIn: () {
+          Navigator.of(ctx).pop();
+          _isShowingDialog = false;
+          context.goNamed('login');
+        },
+        onClose: () {
+          Navigator.of(ctx).pop();
+          _isShowingDialog = false;
+        },
+      ),
+    ).then((_) {
+      _isShowingDialog = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(authControllerProvider, (previous, next) {
-      if (next case AuthAuthenticated()) {
-        context.goNamed('home');
+      if (next case AuthRegistrationSuccess()) {
+        _showSuccessDialog();
       } else if (next case AuthError(:final message)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -461,6 +488,213 @@ class _SignInPrompt extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AccountCreatedDialog extends StatefulWidget {
+  const _AccountCreatedDialog({
+    required this.onSignIn,
+    required this.onClose,
+  });
+
+  final VoidCallback onSignIn;
+  final VoidCallback onClose;
+
+  @override
+  State<_AccountCreatedDialog> createState() => _AccountCreatedDialogState();
+}
+
+class _AccountCreatedDialogState extends State<_AccountCreatedDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnim;
+  late final Animation<double> _fadeAnim;
+  late final Animation<double> _contentSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scaleAnim = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.1, 0.7, curve: Curves.easeOut),
+    );
+    _contentSlide = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.25, 0.85, curve: Curves.easeOutCubic),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Semantics(
+        label: 'Account created successfully',
+        child: AnimatedBuilder(
+          animation: _fadeAnim,
+          builder: (context, child) => Opacity(
+            opacity: _fadeAnim.value,
+            child: child,
+          ),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: ShapeDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              shadows: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 32,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedBuilder(
+                    animation: _scaleAnim,
+                    builder: (context, child) => Transform.scale(
+                      scale: _scaleAnim.value,
+                      child: child,
+                    ),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.success,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 16),
+                      end: Offset.zero,
+                    ).animate(_contentSlide),
+                    child: FadeTransition(
+                      opacity: _contentSlide,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Semantics(
+                            header: true,
+                            child: Text(
+                              'Account Created',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.h2.copyWith(
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1A1A2E),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Your BTL Digital account has been created '
+                            'successfully. You can now sign in securely and '
+                            'start managing your finances.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF6B7280),
+                              height: 1.55,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          Semantics(
+                            button: true,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: widget.onSignIn,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                child: const Text('Sign In'),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Semantics(
+                            button: true,
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 44,
+                              child: TextButton(
+                                onPressed: widget.onClose,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: isDark
+                                      ? Colors.white54
+                                      : const Color(0xFF9CA3AF),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                child: const Text('Close'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

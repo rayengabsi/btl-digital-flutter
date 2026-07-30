@@ -85,11 +85,8 @@ class AuthController extends Notifier<AuthState> {
         password: password,
         phoneNumber: phoneNumber,
       );
-      final response = await _authRepository.register(request);
-      state = AuthState.authenticated(
-        email: response.email,
-        role: response.role,
-      );
+      await _authRepository.register(request);
+      state = const AuthState.registrationSuccess();
     } catch (e) {
       final message = _extractErrorMessage(e);
       state = AuthState.error(message: message);

@@ -70,6 +70,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
         context.goNamed('onboarding');
       case AuthLoading():
       case AuthInitial():
+      case AuthRegistrationSuccess():
         break;
       case AuthError():
         context.goNamed('onboarding');
