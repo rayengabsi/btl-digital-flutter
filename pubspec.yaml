@@ -51,9 +51,6 @@ dev_dependencies:
   json_serializable: ^6.9.2
   freezed: ^2.5.8
 
-  # App Icon Generator
-  flutter_launcher_icons: ^0.14.4
-
 flutter:
   uses-material-design: true
 
@@ -65,12 +62,3 @@ flutter:
     - assets/cards/
     - assets/animations/
     - assets/.env
-
-flutter_launcher_icons:
-  android: true
-  ios: true
-
-  image_path: "assets/icons/app_icon.png"
-
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icons/app_icon.png"

@@ -33,7 +33,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         .sendResetLink(email: _emailController.text.trim());
   }
 
-  void _showSuccessDialog(String message) {
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -41,21 +41,34 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         ),
-        title: const Text('Reset Link Generated'),
-        content: const Text(
-          'A password reset link has been generated.\n\n'
-          'During development the backend prints the reset token '
-          'in the Spring Boot console.\n\n'
-          'Copy the token from the console to continue resetting '
-          'your password.',
+        title: const Text('Check your email'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.email_outlined,
+              color: AppColors.primaryGreen,
+              size: 64,
+            ),
+            SizedBox(height: AppDimensions.paddingM),
+            Text(
+              "We've sent a password reset email.\n"
+              'Tap the button in the email to continue.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+          ],
         ),
         actions: [
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              context.goNamed('resetPassword');
+              context.goNamed('login');
             },
-            child: const Text('Continue'),
+            child: const Text('Done'),
           ),
         ],
       ),
@@ -65,8 +78,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     ref.listen(forgotPasswordControllerProvider, (previous, next) {
-      if (next case ForgotPasswordSuccess(:final message)) {
-        _showSuccessDialog(message);
+      if (next case ForgotPasswordSuccess()) {
+        _showSuccessDialog();
       } else if (next case ForgotPasswordError(:final message)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

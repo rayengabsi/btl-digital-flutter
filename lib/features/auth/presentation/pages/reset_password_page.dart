@@ -19,9 +19,9 @@ class ResetPasswordPage extends ConsumerStatefulWidget {
 
 class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
-  final _tokenController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  String? _token;
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -29,14 +29,11 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialToken != null && widget.initialToken!.isNotEmpty) {
-      _tokenController.text = widget.initialToken!;
-    }
+    _token = widget.initialToken;
   }
 
   @override
   void dispose() {
-    _tokenController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -111,10 +108,23 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
   void _onReset() {
     if (!_formKey.currentState!.validate()) return;
+    if (_token == null || _token!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Reset token is missing. Please use the link from the email.'),
+          backgroundColor: AppColors.primaryRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          ),
+        ),
+      );
+      return;
+    }
     ref
         .read(forgotPasswordControllerProvider.notifier)
         .resetPassword(
-          token: _tokenController.text.trim(),
+          token: _token!,
           newPassword: _passwordController.text,
           confirmPassword: _confirmPasswordController.text,
         );
@@ -177,38 +187,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: size.height * 0.04),
+                    SizedBox(height: size.height * 0.06),
                     const _ResetHeader(),
                     SizedBox(height: size.height * 0.04),
-
-                    // ── Reset Token ─────────────────────────────────────
-                    Text(
-                      'Reset Token',
-                      style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.paddingS),
-                    TextFormField(
-                      controller: _tokenController,
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Reset token is required';
-                        }
-                        return null;
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Paste your reset token',
-                        prefixIcon: Icon(
-                          Icons.vpn_key_outlined,
-                          color: AppColors.textSecondary,
-                          size: AppDimensions.iconM,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.paddingL),
 
                     // ── New Password ────────────────────────────────────
                     Text(
@@ -360,7 +341,7 @@ class _ResetHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppDimensions.paddingS),
         Text(
-          'Enter the reset token and choose\na strong new password.',
+          'Choose a strong password for\nyour account.',
           textAlign: TextAlign.center,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
