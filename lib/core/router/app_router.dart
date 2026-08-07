@@ -7,7 +7,6 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/currencies/presentation/pages/currencies_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/transfers/presentation/pages/transfers_page.dart';
 
 
 abstract final class AppRouter {
@@ -42,11 +41,6 @@ abstract final class AppRouter {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomePage(),
-      ),
-      GoRoute(
-        path: '/home/transfers',
-        name: 'transfers',
-        builder: (context, state) => const TransfersPage(),
       ),
       GoRoute(
         path: '/currencies',

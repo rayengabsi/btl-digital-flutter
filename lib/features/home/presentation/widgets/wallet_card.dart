@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 
 class WalletCard extends ConsumerStatefulWidget {
-  const WalletCard({super.key});
+  const WalletCard({super.key, this.onTransfer});
+
+  /// Invoked when the user taps Transfer. If null the buttons are hidden.
+  final VoidCallback? onTransfer;
 
   @override
   ConsumerState<WalletCard> createState() => _WalletCardState();
@@ -154,7 +156,7 @@ class _WalletCardState extends ConsumerState<WalletCard> {
 
             // ─── Transfer button ─────────────────────────────────────
             GestureDetector(
-              onTap: () => context.go('/home/transfers'),
+              onTap: widget.onTransfer ?? () {},
               child: Container(
                 width: double.infinity,
                 height: 52,

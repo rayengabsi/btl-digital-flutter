@@ -112,7 +112,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.only(top: 8),
-                              child: const WalletCard(),
+                              child: WalletCard(
+                                onTransfer: () => setState(() => _navIndex = 2),
+                              ),
                             ),
                           ),
 
