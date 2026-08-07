@@ -177,16 +177,6 @@ class _DashboardHeader extends StatelessWidget {
               ),
             ),
           ),
-
-          // Notification button
-          _CircleButton(
-            onTap: () {},
-            child: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.textPrimary,
-              size: 22,
-            ),
-          ),
         ],
       ),
     );

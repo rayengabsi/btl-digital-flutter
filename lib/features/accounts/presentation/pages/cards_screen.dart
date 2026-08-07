@@ -10,20 +10,6 @@ import '../../data/models/customer_account_model.dart';
 import '../providers/accounts_provider.dart';
 
 
-// ─── Quick action model ───────────────────────────────────────────────────────
-class _Action {
-  const _Action({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-}
-
-const _quickActions = [
-  _Action(icon: Icons.north_east_rounded, label: 'Send'),
-  _Action(icon: Icons.south_west_rounded, label: 'Request'),
-  _Action(icon: Icons.ac_unit_rounded, label: 'Freeze'),
-  _Action(icon: Icons.remove_red_eye_outlined, label: 'View Details'),
-];
-
 // ─── Card image assets ────────────────────────────────────────────────────────
 const _cardImages = [
   'assets/images/Cards/card_first.png',
@@ -171,8 +157,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
                               SliverToBoxAdapter(
                                 child: _buildCardCarousel(accounts),
                               ),
-                              SliverToBoxAdapter(child: _buildQuickActions()),
-                              SliverToBoxAdapter(child: _buildDepositButton()),
                               SliverToBoxAdapter(
                                 child: _buildTransactionsSection(accounts),
                               ),
@@ -378,35 +362,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
     );
   }
 
-  Widget _buildQuickActions() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: _quickActions.map((a) => _ActionBtn(action: a)).toList(),
-      ),
-    );
-  }
-
-  Widget _buildDepositButton() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.primaryGreen,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          'Deposit / Top Up',
-          style: AppTypography.buttonLarge.copyWith(color: Colors.white),
-        ),
-      ),
-    );
-  }
-
   Widget _buildTransactionsSection(List<CustomerAccount> accounts) {
     final txState = ref.watch(transactionSearchNotifierProvider);
 
@@ -604,76 +559,6 @@ class _RealTxRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ActionBtn extends StatefulWidget {
-  const _ActionBtn({required this.action});
-  final _Action action;
-
-  @override
-  State<_ActionBtn> createState() => _ActionBtnState();
-}
-
-class _ActionBtnState extends State<_ActionBtn>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-      lowerBound: 0.88,
-      upperBound: 1.0,
-      value: 1.0,
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.reverse(),
-      onTapUp: (_) => _ctrl.forward(),
-      onTapCancel: () => _ctrl.forward(),
-      child: ScaleTransition(
-        scale: _ctrl,
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.primaryGreen.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(
-                widget.action.icon,
-                color: AppColors.primaryGreen,
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.action.label,
-              style: AppTypography.labelMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -12,30 +13,8 @@ class WalletCard extends ConsumerStatefulWidget {
   ConsumerState<WalletCard> createState() => _WalletCardState();
 }
 
-class _WalletCardState extends ConsumerState<WalletCard>
-    with SingleTickerProviderStateMixin {
+class _WalletCardState extends ConsumerState<WalletCard> {
   bool _balanceHidden = false;
-  late AnimationController _depositController;
-  late Animation<double> _depositScale;
-
-  @override
-  void initState() {
-    super.initState();
-    _depositController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-      lowerBound: 0.95,
-      upperBound: 1.0,
-      value: 1.0,
-    );
-    _depositScale = _depositController;
-  }
-
-  @override
-  void dispose() {
-    _depositController.dispose();
-    super.dispose();
-  }
 
   void _toggleBalance() {
     setState(() => _balanceHidden = !_balanceHidden);
@@ -173,138 +152,23 @@ class _WalletCardState extends ConsumerState<WalletCard>
 
             const SizedBox(height: 24),
 
-            // ─── Quick actions ────────────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _QuickAction(
-                  icon: Icons.north_east_rounded,
-                  label: 'Send',
-                  onTap: () {},
+            // ─── Transfer button ─────────────────────────────────────
+            GestureDetector(
+              onTap: () => context.go('/home/transfers'),
+              child: Container(
+                width: double.infinity,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                _QuickAction(
-                  icon: Icons.south_west_rounded,
-                  label: 'Request',
-                  onTap: () {},
-                ),
-                _QuickAction(
-                  icon: Icons.smartphone_outlined,
-                  label: 'Top Up',
-                  onTap: () {},
-                ),
-                _QuickAction(
-                  icon: Icons.qr_code_scanner_rounded,
-                  label: 'Scan',
-                  onTap: () {},
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // ─── Deposit button ───────────────────────────────────────
-            ScaleTransition(
-              scale: _depositScale,
-              child: GestureDetector(
-                onTapDown: (_) => _depositController.reverse(),
-                onTapUp: (_) => _depositController.forward(),
-                onTapCancel: () => _depositController.forward(),
-                onTap: () {},
-                child: Container(
-                  width: double.infinity,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Deposit',
-                    style: AppTypography.buttonLarge.copyWith(
-                      color: Colors.white,
-                    ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Transfer',
+                  style: AppTypography.buttonLarge.copyWith(
+                    color: Colors.white,
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickAction extends StatefulWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  State<_QuickAction> createState() => _QuickActionState();
-}
-
-class _QuickActionState extends State<_QuickAction>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-      lowerBound: 0.88,
-      upperBound: 1.0,
-      value: 1.0,
-    );
-    _scale = _ctrl;
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.reverse(),
-      onTapUp: (_) {
-        _ctrl.forward();
-        widget.onTap();
-      },
-      onTapCancel: () => _ctrl.forward(),
-      child: ScaleTransition(
-        scale: _scale,
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppColors.primaryGreen.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(
-                widget.icon,
-                color: AppColors.primaryGreen,
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.label,
-              style: AppTypography.labelMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ],
