@@ -144,6 +144,9 @@ class DioClient {
         );
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode ?? 500;
+        if (statusCode == 429) {
+          return _handleRateLimit(e);
+        }
         final body = e.response?.data;
         return ApiException.fromResponse(statusCode, body);
       case DioExceptionType.cancel:
@@ -169,6 +172,36 @@ class DioClient {
           statusCode: 500,
         );
     }
+  }
+
+  ApiException _handleRateLimit(DioException e) {
+    final statusCode = e.response?.statusCode ?? 429;
+    final retryAfterRaw = e.response?.headers.value('retry-after');
+    final retryAfterSeconds =
+        retryAfterRaw != null ? _parseRetryAfter(retryAfterRaw) : null;
+
+    final message = retryAfterSeconds != null && retryAfterSeconds > 0
+        ? 'Too many requests. Please try again in '
+            '${retryAfterSeconds == 1 ? '1 second' : '$retryAfterSeconds seconds'}.'
+        : 'Too many requests. Please try again shortly.';
+
+    return ApiException(
+      message: message,
+      statusCode: statusCode,
+      errorCode: 'RATE_LIMIT_EXCEEDED',
+    );
+  }
+
+  /// Parses a `Retry-After` header that is either an integer number of seconds
+  /// or an HTTP-date. Returns `null` when neither format matches.
+  int? _parseRetryAfter(String raw) {
+    final seconds = int.tryParse(raw.trim());
+    if (seconds != null && seconds >= 0) return seconds;
+    final date = DateTime.tryParse(raw.trim());
+    if (date != null) {
+      return date.difference(DateTime.now()).inSeconds.clamp(0, 3600);
+    }
+    return null;
   }
 }
 
