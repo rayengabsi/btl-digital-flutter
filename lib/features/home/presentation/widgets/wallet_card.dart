@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../accounts/presentation/providers/accounts_provider.dart';
 
-class WalletCard extends StatefulWidget {
+class WalletCard extends ConsumerStatefulWidget {
   const WalletCard({super.key});
 
   @override
-  State<WalletCard> createState() => _WalletCardState();
+  ConsumerState<WalletCard> createState() => _WalletCardState();
 }
 
-class _WalletCardState extends State<WalletCard>
+class _WalletCardState extends ConsumerState<WalletCard>
     with SingleTickerProviderStateMixin {
   bool _balanceHidden = false;
   late AnimationController _depositController;
@@ -41,6 +43,8 @@ class _WalletCardState extends State<WalletCard>
 
   @override
   Widget build(BuildContext context) {
+    final accountsAsync = ref.watch(customerAccountsProvider);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
@@ -65,7 +69,7 @@ class _WalletCardState extends State<WalletCard>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Wallet Balance',
+                  'Primary Account Balance',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.primaryGreen,
                     fontWeight: FontWeight.w500,
@@ -86,14 +90,23 @@ class _WalletCardState extends State<WalletCard>
             const SizedBox(height: 10),
 
             // ─── Balance ──────────────────────────────────────────────
-            _balanceHidden
-                ? Padding(
+            accountsAsync.when(
+              data: (accounts) {
+                final primary = accounts.isNotEmpty ? accounts.first : null;
+                final currency = primary?.currencyId ?? 'TND';
+                final balance = primary?.availableBalance ?? 0.0;
+                final wholePart = balance.floor().toString();
+                final decimalPart =
+                    ((balance - balance.floor()) * 1000).round().toString().padLeft(3, '0');
+
+                if (_balanceHidden) {
+                  return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          'TND',
+                          currency,
                           style: AppTypography.bodyLarge.copyWith(
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w600,
@@ -110,36 +123,53 @@ class _WalletCardState extends State<WalletCard>
                         ),
                       ],
                     ),
-                  )
-                : RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'TND ',
-                          style: AppTypography.bodyLarge.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  );
+                }
+
+                return RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '$currency ',
+                        style: AppTypography.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
-                        TextSpan(
-                          text: '12,450',
-                          style: AppTypography.h1.copyWith(
-                            fontSize: 44,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+                      ),
+                      TextSpan(
+                        text: wholePart,
+                        style: AppTypography.h1.copyWith(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                         ),
-                        TextSpan(
-                          text: '.80',
-                          style: AppTypography.h3.copyWith(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
+                      ),
+                      TextSpan(
+                        text: '.$decimalPart',
+                        style: AppTypography.h3.copyWith(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen),
+                ),
+              ),
+              error: (err, stack) => Text(
+                'Balance unavailable',
+                style: AppTypography.bodyLarge.copyWith(color: AppColors.primaryRed),
+              ),
+
+            ),
 
             const SizedBox(height: 24),
 
@@ -204,7 +234,6 @@ class _WalletCardState extends State<WalletCard>
   }
 }
 
-// ─── Quick Action Item ────────────────────────────────────────────────────────
 class _QuickAction extends StatefulWidget {
   const _QuickAction({
     required this.icon,
