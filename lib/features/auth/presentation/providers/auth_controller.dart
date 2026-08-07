@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/auth_interceptor.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../features/accounts/presentation/providers/accounts_provider.dart';
+import '../../../../features/beneficiaries/presentation/providers/beneficiaries_provider.dart';
+import '../../../../features/currencies/presentation/providers/currencies_provider.dart';
+import '../../../../features/transfers/presentation/providers/transfers_provider.dart';
 import '../../data/models/choose_mfa_models.dart';
 import '../../data/models/login_request.dart';
 import '../../data/models/registration_models.dart';
@@ -25,10 +29,22 @@ class AuthController extends Notifier<AuthState> {
         .whereType<AuthInterceptor>()
         .firstOrNull;
     authInterceptor?.onUnauthorized = () async {
+      _clearCachedData();
       await tokenStorageService.clearAll();
       state = const AuthState.unauthenticated();
       AppRouter.router.goNamed('login');
     };
+  }
+
+  /// Drops all cached, user-scoped data so that a subsequent login (possibly by
+  /// a different user) starts from a clean slate instead of showing stale data.
+  void _clearCachedData() {
+    ref.invalidate(customerAccountsProvider);
+    ref.invalidate(recentTransactionsProvider);
+    ref.invalidate(transactionSearchNotifierProvider);
+    ref.invalidate(beneficiariesListProvider);
+    ref.invalidate(currenciesProvider);
+    ref.invalidate(transferHistoryControllerProvider);
   }
 
   AuthRepository get _authRepository => ref.read(authRepositoryProvider);
@@ -259,6 +275,7 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    _clearCachedData();
     await _authRepository.logout();
     state = const AuthState.unauthenticated();
   }
