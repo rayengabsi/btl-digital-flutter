@@ -24,6 +24,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   bool _obscurePassword = true;
 
+  // Retains the last resolved MFA screen (channel selection or OTP entry is preserved
+  // while a request is in flight or after an error, so the user stays on the step).
+  AuthState? _retainedView;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -92,6 +96,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState is AuthLoading;
+    final viewState = _resolveViewState(authState);
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -107,13 +112,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: size.height),
-                child: _buildBodyForState(context, authState, size, isLoading),
+                child: _buildBodyForState(context, viewState, size, isLoading),
               ),
             );
           },
         ),
       ),
     );
+  }
+
+  // Keeps the MFA screen (channel selection / OTP entry) visible while a request
+  // is loading or after an error, instead of falling back to the credentials view.
+  AuthState _resolveViewState(AuthState state) {
+    switch (state) {
+      case AuthCredentialsVerified():
+        _retainedView = state;
+        return state;
+      case AuthMfaOtpSent():
+        _retainedView = state;
+        return state;
+      case AuthInitial():
+        _retainedView = null;
+        return state;
+      case AuthLoading():
+        return _retainedView ?? state;
+      case AuthError():
+        return _retainedView ?? state;
+      default:
+        return state;
+    }
   }
 
   Widget _buildBodyForState(
