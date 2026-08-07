@@ -165,3 +165,36 @@ final transactionSearchNotifierProvider =
     NotifierProvider<TransactionSearchNotifier, TransactionSearchState>(
   TransactionSearchNotifier.new,
 );
+
+/// Recent transactions for the user's primary account, shown on the dashboard.
+/// Scoped separately from [transactionSearchNotifierProvider] to avoid
+/// interfering with the account/cards screen's paginated search.
+final recentTransactionsProvider =
+    AsyncNotifierProvider<RecentTransactionsNotifier, List<AccountTransaction>>(
+  RecentTransactionsNotifier.new,
+);
+
+class RecentTransactionsNotifier extends AsyncNotifier<List<AccountTransaction>> {
+  @override
+  Future<List<AccountTransaction>> build() async {
+    final accounts = await ref.watch(customerAccountsProvider.future);
+    if (accounts.isEmpty) return const [];
+    final primary = accounts.first;
+    final now = DateTime.now();
+    final from = now.subtract(const Duration(days: 90));
+
+    String fmt(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    final repository = ref.watch(accountsRepositoryProvider);
+    final response = await repository.getTransactions(
+      primary.iban,
+      AccountTransactionQuery(
+        fromDate: fmt(from),
+        toDate: fmt(now),
+        pageSize: 20,
+      ),
+    );
+    return response.transactions;
+  }
+}
