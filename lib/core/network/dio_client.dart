@@ -210,7 +210,12 @@ class _RetryInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (_isTransient(err) && !_hasRetried(err)) {
+    // Only auto-retry idempotent GET requests. Retrying financial/accepted
+    // POST operations (transfer initiation, OTP confirmation, registration
+    // completion, ...) on a timeout could re-submit the operation server-side
+    // and cause duplicate side effects (e.g. a double transfer).
+    final isIdempotentGet = err.requestOptions.method.toUpperCase() == 'GET';
+    if (_isTransient(err) && isIdempotentGet && !_hasRetried(err)) {
       err.requestOptions.headers['_retry_count'] = '1';
       try {
         final response = await Dio().fetch<void>(err.requestOptions);
