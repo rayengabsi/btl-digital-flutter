@@ -39,6 +39,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _confirmPasswordCtrl = TextEditingController();
   bool _obscurePassword = true;
 
+  // Retains the current registration step so that during in-flight requests or
+  // after an error the user is not thrown back to Step 1 (and does not lose the
+  // session token), which previously forced a full restart.
+  AuthRegistrationStep? _retainedStep;
+
   @override
   void dispose() {
     _firstNameCtrl.dispose();
@@ -124,6 +129,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     ref.listen(authControllerProvider, (previous, next) {
+      if (next is AuthRegistrationStep) {
+        _retainedStep = next;
+      } else if (next is AuthInitial) {
+        _retainedStep = null;
+      }
       if (next case AuthError(:final message, :final details)) {
         final err = details.isNotEmpty ? '$message\n${details.join("\n")}' : message;
         _showError(err);
@@ -162,16 +172,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       return _buildSuccessStep(state.username);
     }
 
+    // Fall back to the retained step while a request is loading or after an
+    // error, so the user stays on the correct step instead of resetting to 1.
+    final AuthRegistrationStep? stepState =
+        state is AuthRegistrationStep ? state : _retainedStep;
+
     int currentStep = 1;
     String? sessionToken;
     String? phone;
     String? email;
 
-    if (state is AuthRegistrationStep) {
-      currentStep = state.step;
-      sessionToken = state.sessionToken;
-      phone = state.phone;
-      email = state.email;
+    if (stepState != null) {
+      currentStep = stepState.step;
+      sessionToken = stepState.sessionToken;
+      phone = stepState.phone;
+      email = stepState.email;
     }
 
     return Column(
