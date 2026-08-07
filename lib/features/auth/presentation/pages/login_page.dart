@@ -8,6 +8,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_state.dart';
 
+
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -19,12 +20,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _otpController = TextEditingController();
+
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -37,15 +41,45 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
   }
 
+  void _onChooseMfa(int challengeId, String challengeToken, String channel) {
+    ref.read(authControllerProvider.notifier).chooseMfa(
+          challengeId: challengeId,
+          challengeToken: challengeToken,
+          mfaChannel: channel,
+        );
+  }
+
+  void _onVerifyOtp(int challengeId, String challengeToken) {
+    final otp = _otpController.text.trim();
+    if (otp.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a 6-digit OTP code'),
+          backgroundColor: AppColors.primaryRed,
+        ),
+      );
+      return;
+    }
+
+    ref.read(authControllerProvider.notifier).verifyLoginOtp(
+          challengeId: challengeId,
+          challengeToken: challengeToken,
+          otp: otp,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(authControllerProvider, (previous, next) {
       if (next case AuthAuthenticated()) {
         context.goNamed('home');
-      } else if (next case AuthError(:final message)) {
+      } else if (next case AuthError(:final message, :final details)) {
+        final errorText = details.isNotEmpty
+            ? '$message\n${details.join("\n")}'
+            : message;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text(errorText),
             backgroundColor: AppColors.primaryRed,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -73,63 +107,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: size.height),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: size.height * 0.08),
-                      const _LoginHeader(),
-                      SizedBox(height: size.height * 0.06),
-                      _EmailField(controller: _emailController),
-                      const SizedBox(height: AppDimensions.paddingM),
-                      _PasswordField(
-                        controller: _passwordController,
-                        obscure: _obscurePassword,
-                        onToggle: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                      ),
-                      const SizedBox(height: AppDimensions.paddingS),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => context.pushNamed('forgotPassword'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primaryGreen,
-                            minimumSize: Size.zero,
-                            padding: EdgeInsets.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Forgot Password?',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.primaryGreen,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: size.height * 0.04),
-                      ElevatedButton(
-                        onPressed: isLoading ? null : _onLogin,
-                        child: isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.white,
-                                ),
-                              )
-                            : const Text('Sign In'),
-                      ),
-                      SizedBox(height: size.height * 0.06),
-                      const _SignUpPrompt(),
-                      const SizedBox(height: AppDimensions.paddingXL),
-                    ],
-                  ),
-                ),
+                child: _buildBodyForState(context, authState, size, isLoading),
               ),
             );
           },
@@ -137,10 +115,231 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
+
+  Widget _buildBodyForState(
+    BuildContext context,
+    AuthState state,
+    Size size,
+    bool isLoading,
+  ) {
+    if (state is AuthCredentialsVerified) {
+      return _buildChooseMfaView(context, state, size, isLoading);
+    }
+    if (state is AuthMfaOtpSent) {
+      return _buildOtpView(context, state, size, isLoading);
+    }
+    return _buildCredentialsView(context, size, isLoading);
+  }
+
+  // ─── STEP 1: CREDENTIALS VIEW ──────────────────────────────────────────────
+  Widget _buildCredentialsView(BuildContext context, Size size, bool isLoading) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: size.height * 0.08),
+          const _LoginHeader(
+            title: 'Welcome back',
+            subtitle: 'Sign in to continue to your account',
+          ),
+          SizedBox(height: size.height * 0.06),
+          _EmailField(controller: _emailController),
+          const SizedBox(height: AppDimensions.paddingM),
+          _PasswordField(
+            controller: _passwordController,
+            obscure: _obscurePassword,
+            onToggle: () => setState(
+              () => _obscurePassword = !_obscurePassword,
+            ),
+          ),
+          SizedBox(height: size.height * 0.04),
+          ElevatedButton(
+            onPressed: isLoading ? null : _onLogin,
+            child: isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.white,
+                    ),
+                  )
+                : const Text('Sign In'),
+          ),
+          SizedBox(height: size.height * 0.06),
+          const _SignUpPrompt(),
+          const SizedBox(height: AppDimensions.paddingXL),
+        ],
+      ),
+    );
+  }
+
+  // ─── STEP 2: CHOOSE MFA CHANNEL VIEW ───────────────────────────────────────
+  Widget _buildChooseMfaView(
+    BuildContext context,
+    AuthCredentialsVerified state,
+    Size size,
+    bool isLoading,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: size.height * 0.08),
+        const _LoginHeader(
+          title: 'Select Verification Method',
+          subtitle: 'Choose where you would like to receive your security OTP code',
+        ),
+        SizedBox(height: size.height * 0.05),
+        ...state.availableChannels.map((channelInfo) {
+          final isPhone = channelInfo.channel == 'PHONE';
+          return Container(
+            margin: const EdgeInsets.only(bottom: AppDimensions.paddingM),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              elevation: 2,
+              shadowColor: Colors.black.withValues(alpha: 0.08),
+              child: InkWell(
+                onTap: isLoading
+                    ? null
+                    : () => _onChooseMfa(
+                          state.challengeId,
+                          state.challengeToken,
+                          channelInfo.channel,
+                        ),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+
+                          isPhone ? Icons.phone_android_rounded : Icons.email_rounded,
+                          color: AppColors.primaryGreen,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isPhone ? 'SMS OTP' : 'Email OTP',
+                              style: AppTypography.h3.copyWith(
+                                fontSize: 16,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Send code to ${channelInfo.maskedDestination}',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryGreen),
+            ),
+          ),
+        const Spacer(),
+        TextButton(
+          onPressed: () => ref.read(authControllerProvider.notifier).reset(),
+          child: const Text('Back to Login'),
+        ),
+        const SizedBox(height: AppDimensions.paddingXL),
+      ],
+    );
+  }
+
+  // ─── STEP 3: VERIFY LOGIN OTP VIEW ─────────────────────────────────────────
+  Widget _buildOtpView(
+    BuildContext context,
+    AuthMfaOtpSent state,
+    Size size,
+    bool isLoading,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: size.height * 0.08),
+        _LoginHeader(
+          title: 'Enter 6-Digit OTP',
+          subtitle: 'Verification code sent to ${state.maskedDestination}',
+        ),
+        SizedBox(height: size.height * 0.06),
+        Text(
+          'Security Code',
+          style: AppTypography.labelLarge.copyWith(color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: AppDimensions.paddingS),
+        TextFormField(
+          controller: _otpController,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          textAlign: TextAlign.center,
+          style: AppTypography.h2.copyWith(letterSpacing: 8),
+          decoration: const InputDecoration(
+            hintText: '123456',
+            counterText: '',
+          ),
+        ),
+        SizedBox(height: size.height * 0.04),
+        ElevatedButton(
+          onPressed: isLoading
+              ? null
+              : () => _onVerifyOtp(state.challengeId, state.challengeToken),
+          child: isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.white,
+                  ),
+                )
+              : const Text('Verify & Login'),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: () => ref.read(authControllerProvider.notifier).reset(),
+          child: const Text('Cancel Verification'),
+        ),
+        const SizedBox(height: AppDimensions.paddingXL),
+      ],
+    );
+  }
 }
 
 class _LoginHeader extends StatelessWidget {
-  const _LoginHeader();
+  const _LoginHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -156,12 +355,13 @@ class _LoginHeader extends StatelessWidget {
           height: AppDimensions.paddingXL + AppDimensions.paddingM,
         ),
         Text(
-          'Welcome back',
+          title,
           style: AppTypography.h2.copyWith(color: AppColors.textPrimary),
         ),
         const SizedBox(height: AppDimensions.paddingS),
         Text(
-          'Sign in to continue to your account',
+          subtitle,
+          textAlign: TextAlign.center,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -196,7 +396,7 @@ class _EmailField extends StatelessWidget {
             if (value == null || value.trim().isEmpty) {
               return 'Email is required';
             }
-            final emailRegex = RegExp(r'^[\w-]+@([\w-]+\.)+[\w-]{2,}$');
+            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
             if (!emailRegex.hasMatch(value.trim())) {
               return 'Please enter a valid email';
             }
@@ -239,9 +439,6 @@ class _PasswordField extends StatelessWidget {
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Password is required';
-            }
-            if (value.length < 6) {
-              return 'Password must be at least 6 characters';
             }
             return null;
           },

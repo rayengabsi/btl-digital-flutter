@@ -48,6 +48,30 @@ class TokenStorageService {
     return _secureStorage.read(key: AppStrings.userEmailKey);
   }
 
+  Future<void> saveUserFirstName(String firstName) async {
+    await _secureStorage.write(key: AppStrings.userFirstNameKey, value: firstName);
+  }
+
+  Future<String?> getUserFirstName() async {
+    return _secureStorage.read(key: AppStrings.userFirstNameKey);
+  }
+
+  Future<void> saveUserLastName(String lastName) async {
+    await _secureStorage.write(key: AppStrings.userLastNameKey, value: lastName);
+  }
+
+  Future<String?> getUserLastName() async {
+    return _secureStorage.read(key: AppStrings.userLastNameKey);
+  }
+
+  Future<void> saveUserAccountStatus(String status) async {
+    await _secureStorage.write(key: AppStrings.userAccountStatusKey, value: status);
+  }
+
+  Future<String?> getUserAccountStatus() async {
+    return _secureStorage.read(key: AppStrings.userAccountStatusKey);
+  }
+
   Future<void> saveUserRole(String role) async {
     await _secureStorage.write(key: AppStrings.userRoleKey, value: role);
   }
@@ -60,13 +84,19 @@ class TokenStorageService {
     required String token,
     required int userId,
     required String email,
-    required String role,
+    String? firstName,
+    String? lastName,
+    String? accountStatus,
+    String role = 'USER',
     String? refreshToken,
   }) async {
     await Future.wait([
       saveToken(token),
       saveUserId(userId),
       saveUserEmail(email),
+      if (firstName != null) saveUserFirstName(firstName),
+      if (lastName != null) saveUserLastName(lastName),
+      if (accountStatus != null) saveUserAccountStatus(accountStatus),
       saveUserRole(role),
       if (refreshToken != null) saveRefreshToken(refreshToken),
     ]);
@@ -81,3 +111,4 @@ class TokenStorageService {
     return token != null && token.isNotEmpty;
   }
 }
+

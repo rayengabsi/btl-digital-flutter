@@ -1,12 +1,11 @@
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/services/token_storage_service.dart';
 import '../datasources/auth_remote_data_source.dart';
-import '../models/forgot_password_request.dart';
+import '../models/choose_mfa_models.dart';
+import '../models/login_challenge_response.dart';
 import '../models/login_request.dart';
-import '../models/login_response.dart';
-import '../models/register_request.dart';
-import '../models/reset_password_request.dart';
-import '../models/reset_password_response.dart';
+import '../models/registration_models.dart';
+import '../models/verify_otp_models.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -20,62 +19,122 @@ class AuthRepositoryImpl implements AuthRepository {
   final TokenStorageService _tokenStorageService;
 
   @override
-  Future<LoginResponse> login(LoginRequest request) async {
+  Future<LoginChallengeResponse> login(LoginRequest request) async {
     try {
-      final response = await _remoteDataSource.login(request);
-      await _saveAuthData(response);
-      return response;
+      return await _remoteDataSource.login(request);
     } on ApiException {
       rethrow;
     } catch (e) {
       throw const ApiException(
-        message: 'Failed to login. Please try again.',
+        message: 'Failed to verify login credentials. Please try again.',
         statusCode: 500,
       );
     }
   }
 
   @override
-  Future<LoginResponse> register(RegisterRequest request) async {
+  Future<ChooseMfaResponse> chooseMfa(ChooseMfaRequest request) async {
     try {
-      final response = await _remoteDataSource.register(request);
-      await _saveAuthData(response);
-      return response;
+      return await _remoteDataSource.chooseMfa(request);
     } on ApiException {
       rethrow;
     } catch (e) {
       throw const ApiException(
-        message: 'Failed to register. Please try again.',
+        message: 'Failed to send MFA code. Please try again.',
         statusCode: 500,
       );
     }
   }
 
   @override
-  Future<ResetPasswordResponse> forgotPassword(
-      ForgotPasswordRequest request) async {
+  Future<AuthTokenResponse> verifyLoginOtp(VerifyLoginOtpRequest request) async {
     try {
-      return await _remoteDataSource.forgotPassword(request);
+      final tokenResponse = await _remoteDataSource.verifyLoginOtp(request);
+      await _tokenStorageService.saveAuthData(
+        token: tokenResponse.accessToken,
+        userId: tokenResponse.userId,
+        email: tokenResponse.email,
+        firstName: tokenResponse.firstName,
+        lastName: tokenResponse.lastName,
+        accountStatus: tokenResponse.accountStatus,
+      );
+      return tokenResponse;
     } on ApiException {
       rethrow;
     } catch (e) {
       throw const ApiException(
-        message: 'Failed to send reset link. Please try again.',
+        message: 'Failed to verify OTP. Please try again.',
         statusCode: 500,
       );
     }
   }
 
   @override
-  Future<ResetPasswordResponse> resetPassword(
-      ResetPasswordRequest request) async {
+  Future<VerifyClientResponse> verifyClient(VerifyClientRequest request) async {
     try {
-      return await _remoteDataSource.resetPassword(request);
+      return await _remoteDataSource.verifyClient(request);
     } on ApiException {
       rethrow;
     } catch (e) {
       throw const ApiException(
-        message: 'Failed to reset password. Please try again.',
+        message: 'Failed to verify client info. Please try again.',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<void> verifyPhoneOtp(VerifyPhoneOtpRequest request) async {
+    try {
+      await _remoteDataSource.verifyPhoneOtp(request);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw const ApiException(
+        message: 'Failed to verify phone OTP. Please try again.',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<void> sendEmailVerification(SendEmailVerificationRequest request) async {
+    try {
+      await _remoteDataSource.sendEmailVerification(request);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw const ApiException(
+        message: 'Failed to send email verification code. Please try again.',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<void> verifyEmailCode(VerifyEmailCodeRequest request) async {
+    try {
+      await _remoteDataSource.verifyEmailCode(request);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw const ApiException(
+        message: 'Failed to verify email code. Please try again.',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<RegistrationSuccessData> completeRegistration(
+      CompleteRegistrationRequest request) async {
+    try {
+      return await _remoteDataSource.completeRegistration(request);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw const ApiException(
+        message: 'Failed to complete registration. Please try again.',
         statusCode: 500,
       );
     }
@@ -92,29 +151,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<LoginResponse?> restoreSession() async {
+  Future<AuthTokenResponse?> restoreSession() async {
     final token = await _tokenStorageService.getToken();
     if (token == null || token.isEmpty) return null;
 
     final userId = await _tokenStorageService.getUserId();
     final email = await _tokenStorageService.getUserEmail();
-    final role = await _tokenStorageService.getUserRole();
+    final firstName = await _tokenStorageService.getUserFirstName();
+    final lastName = await _tokenStorageService.getUserLastName();
+    final accountStatus = await _tokenStorageService.getUserAccountStatus();
 
-    return LoginResponse(
-      token: token,
-      type: 'Bearer',
+    return AuthTokenResponse(
+      accessToken: token,
+      tokenType: 'Bearer',
+      expiresInSeconds: 900,
       userId: userId ?? 0,
       email: email ?? '',
-      role: role ?? 'USER',
-    );
-  }
-
-  Future<void> _saveAuthData(LoginResponse response) async {
-    await _tokenStorageService.saveAuthData(
-      token: response.token,
-      userId: response.userId,
-      email: response.email,
-      role: response.role,
+      firstName: firstName ?? '',
+      lastName: lastName ?? '',
+      accountStatus: accountStatus ?? 'ACTIVE',
     );
   }
 }

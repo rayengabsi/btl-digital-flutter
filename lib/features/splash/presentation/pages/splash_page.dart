@@ -70,12 +70,16 @@ class _SplashPageState extends ConsumerState<SplashPage>
         context.goNamed('onboarding');
       case AuthLoading():
       case AuthInitial():
+      case AuthCredentialsVerified():
+      case AuthMfaOtpSent():
+      case AuthRegistrationStep():
       case AuthRegistrationSuccess():
         break;
       case AuthError():
         context.goNamed('onboarding');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
