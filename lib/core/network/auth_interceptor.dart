@@ -28,8 +28,11 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      await tokenStorageService.clearAll();
-      await onUnauthorized?.call();
+      final hadAuth = err.requestOptions.headers['Authorization'] != null;
+      if (hadAuth) {
+        await tokenStorageService.clearAll();
+        await onUnauthorized?.call();
+      }
     }
 
     handler.next(err);

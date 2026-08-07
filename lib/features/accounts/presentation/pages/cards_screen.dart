@@ -449,7 +449,42 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
                 ],
               ),
               const SizedBox(height: 16),
-              if (txState.transactions.isEmpty && !txState.isLoading)
+              if (txState.errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            size: 18,
+                            color: AppColors.primaryRed,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              txState.errorMessage!,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.primaryRed,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(transactionSearchNotifierProvider.notifier)
+                            .loadNextPage(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              else if (txState.transactions.isEmpty && !txState.isLoading)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   child: Center(

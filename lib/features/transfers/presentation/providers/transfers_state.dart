@@ -99,6 +99,8 @@ class TransferHistoryState {
     this.isLoadingMore = false,
     this.errorMessage,
     this.hasLoaded = false,
+    this.from,
+    this.to,
   });
 
   final List<TransferDemand> demands;
@@ -110,6 +112,8 @@ class TransferHistoryState {
   final bool isLoadingMore;
   final String? errorMessage;
   final bool hasLoaded;
+  final String? from;
+  final String? to;
 
   TransferHistoryState copyWith({
     List<TransferDemand>? demands,
@@ -122,6 +126,8 @@ class TransferHistoryState {
     String? errorMessage,
     bool clearError = false,
     bool? hasLoaded,
+    String? from,
+    String? to,
   }) {
     return TransferHistoryState(
       demands: demands ?? this.demands,
@@ -133,6 +139,8 @@ class TransferHistoryState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       hasLoaded: hasLoaded ?? this.hasLoaded,
+      from: from ?? this.from,
+      to: to ?? this.to,
     );
   }
 

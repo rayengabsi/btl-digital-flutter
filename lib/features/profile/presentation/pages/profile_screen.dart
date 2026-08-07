@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_state.dart';
+import '../../../beneficiaries/presentation/pages/beneficiaries_page.dart';
 import '../../../home/presentation/widgets/btl_bottom_nav.dart';
 import '../../../settings/presentation/widgets/premium_settings_widgets.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key, this.onNavTap});
 
   final ValueChanged<int>? onNavTap;
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
     with TickerProviderStateMixin {
   int _navIndex = 3;
 
@@ -56,9 +62,31 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  void _onLogout() {
+    ref.read(authControllerProvider.notifier).logout();
+    context.goNamed('login');
+  }
+
+  void _openBeneficiaries() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const BeneficiariesPage()),
+    );
+  }
+
+  void _goToAccounts() {
+    if (widget.onNavTap != null) {
+      widget.onNavTap!(1);
+    } else {
+      setState(() => _navIndex = 1);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+
+    final authState = ref.watch(authControllerProvider);
+    final (name, initials) = _identityFrom(authState);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -141,8 +169,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                               child: PremiumProfileHeader(
-                                name: 'Mohamed Ashraf Kadri',
-                                initials: 'MA',
+                                name: name,
+                                initials: initials,
                                 onTap: () {},
                               ),
                             ),
@@ -171,13 +199,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     icon: Icons.credit_card_outlined,
                                     title: 'Bank Accounts & Cards',
                                     subtitle: 'Manage your accounts and cards',
-                                    onTap: () {},
+                                    onTap: _goToAccounts,
                                   ),
                                   PremiumSettingsTile(
                                     icon: Icons.people_outline_rounded,
                                     title: 'Beneficiaries',
                                     subtitle: 'Manage your saved recipients',
-                                    onTap: () {},
+                                    onTap: _openBeneficiaries,
                                   ),
                                 ],
                               ),
@@ -285,7 +313,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   PremiumSettingsTile(
                                     icon: Icons.info_outline_rounded,
                                     title: 'About BTL Digital',
-                                    subtitle: 'Version 1.2.0',
+                                    subtitle: 'Version ${AppStrings.appVersion}',
                                     onTap: () {},
                                   ),
                                 ],
@@ -298,7 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               child: ElegantLogoutButton(
-                                onTap: () {},
+                                onTap: _onLogout,
                               ),
                             ),
                           ),
@@ -335,5 +363,23 @@ class _ProfileScreenState extends State<ProfileScreen>
         ],
       ),
     );
+  }
+
+  (String, String) _identityFrom(AuthState auth) {
+    final first = auth is AuthAuthenticated ? auth.firstName : '';
+    final last = auth is AuthAuthenticated ? auth.lastName : '';
+    final email = auth is AuthAuthenticated ? auth.email : '';
+
+    final name = [first, last].where((e) => e.trim().isNotEmpty).join(' ');
+    final displayName = name.trim().isNotEmpty ? name : email.trim();
+    final usable = displayName.isNotEmpty ? displayName : 'User';
+
+    String initials;
+    if (first.isNotEmpty && last.isNotEmpty) {
+      initials = '${first[0]}${last[0]}'.toUpperCase();
+    } else {
+      initials = usable.isNotEmpty ? usable[0].toUpperCase() : 'U';
+    }
+    return (displayName, initials);
   }
 }

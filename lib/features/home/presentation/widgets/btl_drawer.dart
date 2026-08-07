@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_state.dart';
 
 class BtlDrawer extends ConsumerWidget {
   const BtlDrawer({super.key, this.onProfileTap});
@@ -14,6 +16,9 @@ class BtlDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final (name, initials) = _identityFrom(authState);
+
     return Drawer(
       backgroundColor: AppColors.white,
       elevation: 0,
@@ -25,8 +30,8 @@ class BtlDrawer extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: _DrawerProfileHeader(
-                name: 'Mohammed Ashraf',
-                initials: 'MA',
+                name: name,
+                initials: initials,
                 onTap: () {
                   Navigator.of(context).pop();
                   if (onProfileTap != null) onProfileTap!();
@@ -148,7 +153,7 @@ class BtlDrawer extends ConsumerWidget {
                           ),
                           const Spacer(),
                           Text(
-                            '1.2.0',
+                            AppStrings.appVersion,
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
@@ -213,6 +218,24 @@ class BtlDrawer extends ConsumerWidget {
       ),
     );
   }
+}
+
+// ─── Identity helpers ────────────────────────────────────────────────────────
+(String, String) _identityFrom(AuthState auth) {
+  final first = auth is AuthAuthenticated ? auth.firstName : '';
+  final last = auth is AuthAuthenticated ? auth.lastName : '';
+  final email = auth is AuthAuthenticated ? auth.email : '';
+
+  final name = [first, last].where((e) => e.trim().isNotEmpty).join(' ');
+  final displayName = name.trim().isNotEmpty ? name : email.trim();
+
+  String initials;
+  if (first.isNotEmpty && last.isNotEmpty) {
+    initials = '${first[0]}${last[0]}'.toUpperCase();
+  } else {
+    initials = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+  }
+  return (displayName, initials);
 }
 
 // ─── Compact Header Widget ───────────────────────────────────────────────────

@@ -133,6 +133,8 @@ class TransferHistoryController extends Notifier<TransferHistoryState> {
       clearError: true,
       page: 0,
       demands: const [],
+      from: from,
+      to: to,
     );
     try {
       final page = await _repository.getTransferDemands(
@@ -145,6 +147,8 @@ class TransferHistoryController extends Notifier<TransferHistoryState> {
         totalElements: page.totalElements,
         totalPages: page.totalPages,
         hasLoaded: true,
+        from: from,
+        to: to,
       );
     } catch (e) {
       state = prev.copyWith(isLoading: false, errorMessage: _message(e));
@@ -161,6 +165,8 @@ class TransferHistoryController extends Notifier<TransferHistoryState> {
             TransferDemandQuery(
               page: nextPage,
               size: state.size,
+              from: state.from,
+              to: state.to,
             ),
           );
       final merged = [...state.demands, ...page.content];
@@ -171,6 +177,8 @@ class TransferHistoryController extends Notifier<TransferHistoryState> {
         totalElements: page.totalElements,
         totalPages: page.totalPages,
         hasLoaded: true,
+        from: state.from,
+        to: state.to,
       );
     } catch (e) {
       state = state.copyWith(isLoadingMore: false, errorMessage: _message(e));

@@ -178,41 +178,14 @@ class _DashboardHeader extends StatelessWidget {
             ),
           ),
 
-          // Notification button with badge
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              _CircleButton(
-                onTap: () {},
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  color: AppColors.textPrimary,
-                  size: 22,
-                ),
-              ),
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryRed,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    '3',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          // Notification button
+          _CircleButton(
+            onTap: () {},
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: AppColors.textPrimary,
+              size: 22,
+            ),
           ),
         ],
       ),

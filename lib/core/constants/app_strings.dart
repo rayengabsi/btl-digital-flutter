@@ -1,6 +1,7 @@
 abstract final class AppStrings {
   static const String appName = 'BTL Digital Banking';
   static const String appTagline = 'Your Bank, Your Way';
+  static const String appVersion = '1.2.0';
 
   // Keys
   static const String accessTokenKey = 'access_token';

@@ -207,9 +207,11 @@ class BeneficiariesPage extends ConsumerWidget {
                                   navigator.pop();
                                 } catch (e) {
                                   setModalState(() => isSubmitting = false);
-                                  final msg = e is ApiException ? e.message : 'Error saving beneficiary';
                                   messenger.showSnackBar(
-                                    SnackBar(content: Text(msg), backgroundColor: AppColors.primaryRed),
+                                    SnackBar(
+                                      content: Text(_errorText(e)),
+                                      backgroundColor: AppColors.primaryRed,
+                                    ),
                                   );
                                 }
 
@@ -265,6 +267,16 @@ class BeneficiariesPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _errorText(Object error) {
+    if (error is ApiException) {
+      if (error.errorCode == 'VALIDATION_ERROR' && error.details.isNotEmpty) {
+        return '${error.message}\n${error.details.join('\n')}';
+      }
+      return error.message;
+    }
+    return 'Error saving beneficiary';
   }
 }
 
