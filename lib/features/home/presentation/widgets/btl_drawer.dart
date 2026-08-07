@@ -59,6 +59,19 @@ class BtlDrawer extends ConsumerWidget {
 
                     const SizedBox(height: 20),
 
+                    // SERVICES
+                    _DrawerSectionHeader(title: 'SERVICES'),
+                    _DrawerMenuItem(
+                      icon: Icons.currency_exchange_rounded,
+                      title: 'Currency Exchange',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        context.go('/currencies');
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
                     // MORE
                     _DrawerSectionHeader(title: 'MORE'),
                     Padding(
