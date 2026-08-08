@@ -211,94 +211,104 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        SizedBox(height: size.height * 0.08),
-        const _LoginHeader(
-          title: 'Select Verification Method',
-          subtitle: 'Choose where you would like to receive your security OTP code',
-        ),
-        SizedBox(height: size.height * 0.05),
-        ...state.availableChannels.map((channelInfo) {
-          final isPhone = channelInfo.channel == 'PHONE';
-          return Container(
-            margin: const EdgeInsets.only(bottom: AppDimensions.paddingM),
-            child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              elevation: 2,
-              shadowColor: Colors.black.withValues(alpha: 0.08),
-              child: InkWell(
-                onTap: isLoading
-                    ? null
-                    : () => _onChooseMfa(
-                          state.challengeId,
-                          state.challengeToken,
-                          channelInfo.channel,
-                        ),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryGreen.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: size.height * 0.08),
+            const _LoginHeader(
+              title: 'Select Verification Method',
+              subtitle: 'Choose where you would like to receive your security OTP code',
+            ),
+            SizedBox(height: size.height * 0.05),
+            ...state.availableChannels.map((channelInfo) {
+              final isPhone = channelInfo.channel == 'PHONE';
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppDimensions.paddingM),
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  elevation: 2,
+                  shadowColor: Colors.black.withValues(alpha: 0.08),
+                  child: InkWell(
+                    onTap: isLoading
+                        ? null
+                        : () => _onChooseMfa(
+                              state.challengeId,
+                              state.challengeToken,
+                              channelInfo.channel,
+                            ),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
 
-                          isPhone ? Icons.phone_android_rounded : Icons.email_rounded,
-                          color: AppColors.primaryGreen,
-                          size: 26,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isPhone ? 'SMS OTP' : 'Email OTP',
-                              style: AppTypography.h3.copyWith(
-                                fontSize: 16,
-                                color: AppColors.textPrimary,
-                              ),
+                              isPhone ? Icons.phone_android_rounded : Icons.email_rounded,
+                              color: AppColors.primaryGreen,
+                              size: 26,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Send code to ${channelInfo.maskedDestination}',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isPhone ? 'SMS OTP' : 'Email OTP',
+                                  style: AppTypography.h3.copyWith(
+                                    fontSize: 16,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Send code to ${channelInfo.maskedDestination}',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
                       ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.textSecondary,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+              );
+            }),
+            if (isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primaryGreen),
+                ),
               ),
-            ),
-          );
-        }),
-        if (isLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.primaryGreen),
-            ),
-          ),
-        const Spacer(),
-        TextButton(
-          onPressed: () => ref.read(authControllerProvider.notifier).reset(),
-          child: const Text('Back to Login'),
+          ],
         ),
-        const SizedBox(height: AppDimensions.paddingXL),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextButton(
+              onPressed: () => ref.read(authControllerProvider.notifier).reset(),
+              child: const Text('Back to Login'),
+            ),
+            const SizedBox(height: AppDimensions.paddingXL),
+          ],
+        ),
       ],
     );
   }
@@ -312,51 +322,61 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        SizedBox(height: size.height * 0.08),
-        _LoginHeader(
-          title: 'Enter 6-Digit OTP',
-          subtitle: 'Verification code sent to ${state.maskedDestination}',
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: size.height * 0.08),
+            _LoginHeader(
+              title: 'Enter 6-Digit OTP',
+              subtitle: 'Verification code sent to ${state.maskedDestination}',
+            ),
+            SizedBox(height: size.height * 0.06),
+            Text(
+              'Security Code',
+              style: AppTypography.labelLarge.copyWith(color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: AppDimensions.paddingS),
+            TextFormField(
+              controller: _otpController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              textAlign: TextAlign.center,
+              style: AppTypography.h2.copyWith(letterSpacing: 8),
+              decoration: const InputDecoration(
+                hintText: '123456',
+                counterText: '',
+              ),
+            ),
+            SizedBox(height: size.height * 0.04),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () => _onVerifyOtp(state.challengeId, state.challengeToken),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : const Text('Verify & Login'),
+            ),
+          ],
         ),
-        SizedBox(height: size.height * 0.06),
-        Text(
-          'Security Code',
-          style: AppTypography.labelLarge.copyWith(color: AppColors.textPrimary),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextButton(
+              onPressed: () => ref.read(authControllerProvider.notifier).reset(),
+              child: const Text('Cancel Verification'),
+            ),
+            const SizedBox(height: AppDimensions.paddingXL),
+          ],
         ),
-        const SizedBox(height: AppDimensions.paddingS),
-        TextFormField(
-          controller: _otpController,
-          keyboardType: TextInputType.number,
-          maxLength: 6,
-          textAlign: TextAlign.center,
-          style: AppTypography.h2.copyWith(letterSpacing: 8),
-          decoration: const InputDecoration(
-            hintText: '123456',
-            counterText: '',
-          ),
-        ),
-        SizedBox(height: size.height * 0.04),
-        ElevatedButton(
-          onPressed: isLoading
-              ? null
-              : () => _onVerifyOtp(state.challengeId, state.challengeToken),
-          child: isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.white,
-                  ),
-                )
-              : const Text('Verify & Login'),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: () => ref.read(authControllerProvider.notifier).reset(),
-          child: const Text('Cancel Verification'),
-        ),
-        const SizedBox(height: AppDimensions.paddingXL),
       ],
     );
   }
