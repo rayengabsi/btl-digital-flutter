@@ -65,6 +65,7 @@ class AuthController extends Notifier<AuthState> {
           );
           return;
         }
+        await _authRepository.logout();
       }
       state = const AuthState.unauthenticated();
     } catch (e) {

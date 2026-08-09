@@ -157,6 +157,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final userId = await _tokenStorageService.getUserId();
     final email = await _tokenStorageService.getUserEmail();
+
+    if (userId == null || userId <= 0 || email == null || email.isEmpty) {
+      return null;
+    }
+
     final firstName = await _tokenStorageService.getUserFirstName();
     final lastName = await _tokenStorageService.getUserLastName();
     final accountStatus = await _tokenStorageService.getUserAccountStatus();
@@ -165,8 +170,8 @@ class AuthRepositoryImpl implements AuthRepository {
       accessToken: token,
       tokenType: 'Bearer',
       expiresInSeconds: 900,
-      userId: userId ?? 0,
-      email: email ?? '',
+      userId: userId,
+      email: email,
       firstName: firstName ?? '',
       lastName: lastName ?? '',
       accountStatus: accountStatus ?? 'ACTIVE',
