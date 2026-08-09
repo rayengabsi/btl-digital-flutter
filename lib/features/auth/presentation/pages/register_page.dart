@@ -198,7 +198,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppDimensions.paddingXL),
-          child: _buildStepContent(context, authState, isLoading),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: _buildStepContent(context, authState, isLoading),
+          ),
         ),
       ),
     );
@@ -293,6 +298,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return Form(
       key: _step1FormKey,
       child: Column(
+        key: const ValueKey('register-step-1'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Step 1 of 5: Customer Verification', style: AppTypography.h3),
@@ -385,6 +391,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // ─── STEP 2: VERIFY PHONE OTP ──────────────────────────────────────────────
   Widget _buildStep2PhoneOtp(String token, String phone, bool isLoading) {
     return Column(
+      key: const ValueKey('register-step-2'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Step 2 of 5: Phone OTP Verification', style: AppTypography.h3),
@@ -424,6 +431,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return Form(
       key: _step3FormKey,
       child: Column(
+        key: const ValueKey('register-step-3'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Step 3 of 5: Email Verification', style: AppTypography.h3),
@@ -465,6 +473,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // ─── STEP 4: VERIFY EMAIL CODE ─────────────────────────────────────────────
   Widget _buildStep4EmailCode(String token, String email, bool isLoading) {
     return Column(
+      key: const ValueKey('register-step-4'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Step 4 of 5: Confirm Email Code', style: AppTypography.h3),
@@ -504,6 +513,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return Form(
       key: _step5FormKey,
       child: Column(
+        key: const ValueKey('register-step-5'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Step 5 of 5: Create Account Password', style: AppTypography.h3),
@@ -561,6 +571,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // ─── SUCCESS STEP ──────────────────────────────────────────────────────────
   Widget _buildSuccessStep(String username) {
     return Column(
+      key: const ValueKey('register-success'),
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [

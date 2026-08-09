@@ -126,7 +126,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: size.height),
-                child: _buildBodyForState(context, viewState, size, isLoading),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: _buildBodyForState(
+                    context,
+                    viewState,
+                    size,
+                    isLoading,
+                  ),
+                ),
               ),
             );
           },
@@ -183,6 +193,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Form(
       key: _formKey,
       child: Column(
+        key: const ValueKey('login-view-credentials'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(height: size.height * 0.08),
@@ -231,6 +242,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     bool isLoading,
   ) {
     return Column(
+      key: const ValueKey('login-view-choose-mfa'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -342,6 +354,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     bool isLoading,
   ) {
     return Column(
+      key: const ValueKey('login-view-otp'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
