@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
@@ -22,7 +23,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _lastNameCtrl = TextEditingController();
   String _idType = 'CIN';
   final _idNumberCtrl = TextEditingController();
-  final _dobCtrl = TextEditingController(); // yyyyMMdd
+  final _dobCtrl = TextEditingController(); // yyyyMMdd (for submission)
+  DateTime? _selectedDob; // date of birth from the mobile picker
   final _phoneCtrl = TextEditingController();
 
   // Step 2 & 4 Controllers
@@ -67,9 +69,30 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           lastName: _lastNameCtrl.text.trim(),
           idType: _idType,
           idNumber: _idNumberCtrl.text.trim(),
-          dateOfBirth: _dobCtrl.text.trim(),
+          dateOfBirth: _selectedDob != null
+              ? DateFormat('yyyyMMdd').format(_selectedDob!)
+              : _dobCtrl.text.trim(),
           phoneNumber: _phoneCtrl.text.trim(),
         );
+  }
+
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final initial = _selectedDob ?? DateTime(now.year - 25, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: now,
+      helpText: 'Select date of birth',
+      cancelText: 'Cancel',
+      confirmText: 'Confirm',
+    );
+    if (picked == null) return;
+    setState(() {
+      _selectedDob = picked;
+      _dobCtrl.text = DateFormat('dd/MM/yyyy').format(picked);
+    });
   }
 
   void _onVerifyPhoneOtp(String sessionToken) {
@@ -279,18 +302,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             validator: (v) => v == null || v.trim().isEmpty ? 'Enter ID number' : null,
           ),
           const SizedBox(height: 16),
-          _buildTextField(
-            label: 'Date of Birth (YYYYMMDD)',
-            controller: _dobCtrl,
-            hint: '19900101',
-            keyboardType: TextInputType.number,
-            validator: (v) {
-              if (v == null || v.trim().length != 8) {
-                return 'Enter 8 digits date of birth (YYYYMMDD)';
-              }
-              return null;
-            },
-          ),
+          _buildDobField(),
           const SizedBox(height: 16),
           _buildTextField(
             label: 'Phone Number (SMS_1 registered)',
@@ -499,6 +511,41 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ElevatedButton(
           onPressed: () => context.goNamed('login'),
           child: const Text('Sign In Now'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDobField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Date of Birth', style: AppTypography.labelLarge),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: _dobCtrl,
+          readOnly: true,
+          autofocus: false,
+          showCursor: false,
+          keyboardType: TextInputType.none,
+          onTap: _pickDob,
+          decoration: const InputDecoration(
+            hintText: 'dd/MM/yyyy',
+            prefixIcon: Icon(
+              Icons.cake_outlined,
+              color: AppColors.textSecondary,
+            ),
+            suffixIcon: Icon(
+              Icons.calendar_month_rounded,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          validator: (_) {
+            if (_selectedDob == null) {
+              return 'Select your date of birth';
+            }
+            return null;
+          },
         ),
       ],
     );
