@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -198,6 +199,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             onToggle: () => setState(
               () => _obscurePassword = !_obscurePassword,
             ),
+            onSubmitted: (_) => _onLogin(),
           ),
           SizedBox(height: size.height * 0.04),
           ElevatedButton(
@@ -360,9 +362,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             TextFormField(
               controller: _otpController,
               keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
               maxLength: 6,
+              autofillHints: const [AutofillHints.oneTimeCode],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              autocorrect: false,
+              enableSuggestions: false,
               textAlign: TextAlign.center,
               style: AppTypography.h2.copyWith(letterSpacing: 8),
+              onFieldSubmitted: (_) =>
+                  _onVerifyOtp(state.challengeId, state.challengeToken),
               decoration: const InputDecoration(
                 hintText: '123456',
                 counterText: '',
@@ -458,6 +467,8 @@ class _EmailField extends StatelessWidget {
           controller: controller,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
+          autocorrect: false,
+          enableSuggestions: false,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
               return 'Email is required';
@@ -480,11 +491,13 @@ class _PasswordField extends StatelessWidget {
     required this.controller,
     required this.obscure,
     required this.onToggle,
+    required this.onSubmitted,
   });
 
   final TextEditingController controller;
   final bool obscure;
   final VoidCallback onToggle;
+  final ValueChanged<String> onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -502,6 +515,9 @@ class _PasswordField extends StatelessWidget {
           controller: controller,
           obscureText: obscure,
           textInputAction: TextInputAction.done,
+          autocorrect: false,
+          enableSuggestions: false,
+          onFieldSubmitted: onSubmitted,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Password is required';

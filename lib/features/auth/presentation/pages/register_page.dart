@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -27,6 +28,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   DateTime? _selectedDob; // date of birth from the mobile picker
   final _phoneCtrl = TextEditingController();
 
+  // Step 1 focus chain for smoother keyboard navigation
+  final _firstNameFocus = FocusNode();
+  final _lastNameFocus = FocusNode();
+  final _idNumberFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+
   // Step 2 & 4 Controllers
   final _phoneOtpCtrl = TextEditingController();
   final _emailCodeCtrl = TextEditingController();
@@ -48,6 +55,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   void dispose() {
+    _firstNameFocus.dispose();
+    _lastNameFocus.dispose();
+    _idNumberFocus.dispose();
+    _phoneFocus.dispose();
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _idNumberCtrl.dispose();
@@ -270,6 +281,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 child: _buildTextField(
                   label: 'First Name',
                   controller: _firstNameCtrl,
+                  focusNode: _firstNameFocus,
+                  textCapitalization: TextCapitalization.words,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _lastNameFocus.requestFocus(),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
               ),
@@ -278,6 +294,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 child: _buildTextField(
                   label: 'Last Name',
                   controller: _lastNameCtrl,
+                  focusNode: _lastNameFocus,
+                  textCapitalization: TextCapitalization.words,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _idNumberFocus.requestFocus(),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
               ),
@@ -299,6 +320,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             label: 'ID Number',
             controller: _idNumberCtrl,
             hint: 'e.g. 12345678',
+            focusNode: _idNumberFocus,
+            autocorrect: false,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+            ],
+            onFieldSubmitted: (_) => _phoneFocus.requestFocus(),
             validator: (v) => v == null || v.trim().isEmpty ? 'Enter ID number' : null,
           ),
           const SizedBox(height: 16),
@@ -308,7 +336,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             label: 'Phone Number (SMS_1 registered)',
             controller: _phoneCtrl,
             hint: '21655123456',
+            focusNode: _phoneFocus,
             keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onFieldSubmitted: (_) => _onVerifyClient(),
             validator: (v) => v == null || v.trim().length < 8 ? 'Enter valid phone number' : null,
           ),
           const SizedBox(height: 28),
@@ -338,9 +370,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         TextFormField(
           controller: _phoneOtpCtrl,
           keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
           maxLength: 6,
+          autofillHints: const [AutofillHints.oneTimeCode],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          autocorrect: false,
+          enableSuggestions: false,
           textAlign: TextAlign.center,
           style: AppTypography.h2.copyWith(letterSpacing: 8),
+          onFieldSubmitted: (_) => _onVerifyPhoneOtp(token),
           decoration: const InputDecoration(hintText: '123456', counterText: ''),
         ),
         const SizedBox(height: 28),
@@ -373,6 +411,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             controller: _emailCtrl,
             hint: 'amina@example.com',
             keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            autocorrect: false,
+            enableSuggestions: false,
+            onFieldSubmitted: (_) => _onSendEmail(token),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Email is required';
               if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v.trim())) {
@@ -408,9 +450,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         TextFormField(
           controller: _emailCodeCtrl,
           keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
           maxLength: 6,
+          autofillHints: const [AutofillHints.oneTimeCode],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          autocorrect: false,
+          enableSuggestions: false,
           textAlign: TextAlign.center,
           style: AppTypography.h2.copyWith(letterSpacing: 8),
+          onFieldSubmitted: (_) => _onVerifyEmailCode(token),
           decoration: const InputDecoration(hintText: '123456', counterText: ''),
         ),
         const SizedBox(height: 28),
@@ -442,6 +490,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             label: 'New Password',
             controller: _passwordCtrl,
             obscure: _obscurePassword,
+            autocorrect: false,
+            enableSuggestions: false,
             suffix: IconButton(
               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -462,6 +512,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             label: 'Confirm Password',
             controller: _confirmPasswordCtrl,
             obscure: _obscurePassword,
+            autocorrect: false,
+            enableSuggestions: false,
             validator: (v) {
               if (v != _passwordCtrl.text) return 'Passwords do not match';
               return null;
@@ -558,6 +610,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     bool obscure = false,
     Widget? suffix,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onFieldSubmitted,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    List<TextInputFormatter>? inputFormatters,
+    bool autocorrect = true,
+    bool enableSuggestions = true,
+    FocusNode? focusNode,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -567,8 +626,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           obscureText: obscure,
           keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
+          textCapitalization: textCapitalization,
+          inputFormatters: inputFormatters,
+          autocorrect: autocorrect,
+          enableSuggestions: enableSuggestions,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
