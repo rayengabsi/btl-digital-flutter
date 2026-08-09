@@ -285,6 +285,23 @@ class AuthController extends Notifier<AuthState> {
     state = const AuthState.initial();
   }
 
+  /// Moves the registration flow one step back while keeping the session token,
+  /// so pressing back from Step 5 returns to Step 4 (et cetera) instead of
+  /// discarding the whole flow. Backing up from Step 1 leaves the flow.
+  void goBackStep() {
+    final current = state;
+    if (current is AuthRegistrationStep && current.step > 1) {
+      state = AuthRegistrationStep(
+        step: current.step - 1,
+        sessionToken: current.sessionToken,
+        phone: current.phone,
+        email: current.email,
+      );
+    } else if (current is AuthRegistrationStep) {
+      state = const AuthState.initial();
+    }
+  }
+
   void _handleError(dynamic error) {
     if (error is ApiException) {
       state = AuthState.error(

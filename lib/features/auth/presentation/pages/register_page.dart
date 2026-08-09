@@ -184,8 +184,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () {
-            if (authState is AuthRegistrationStep && authState.step > 1) {
-              ref.read(authControllerProvider.notifier).reset();
+            final currentStep = authState is AuthRegistrationStep
+                ? authState.step
+                : (_retainedStep?.step ?? 1);
+            if (currentStep > 1) {
+              ref.read(authControllerProvider.notifier).goBackStep();
             } else {
               context.goNamed('login');
             }
@@ -242,22 +245,46 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   Widget _buildStepperIndicator(int step) {
-    return Row(
-      children: List.generate(5, (index) {
-        final stepNumber = index + 1;
-        final isActive = stepNumber <= step;
-        return Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            height: 4,
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.primaryGreen : AppColors.borderLight,
-              borderRadius: BorderRadius.circular(2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Step $step of 5',
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.primaryGreen,
+                fontWeight: FontWeight.w700,
+              ),
             ),
+            const Spacer(),
+            Text(
+              '$step/5',
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: List.generate(5, (index) {
+            final stepNumber = index + 1;
+            final isActive = stepNumber <= step;
+            return Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isActive ? AppColors.primaryGreen : AppColors.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
 
-          ),
-        );
-      }),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 
@@ -555,9 +582,41 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         Text('Registration Complete!', style: AppTypography.h2),
         const SizedBox(height: 8),
         Text(
-          'Your account for $username has been successfully activated.',
+          'Your account has been successfully activated.',
           textAlign: TextAlign.center,
           style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingXL,
+            vertical: AppDimensions.paddingM,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.primaryGreen.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+            border: Border.all(
+              color: AppColors.primaryGreen.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.person_outline_rounded,
+                color: AppColors.primaryGreen,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                username,
+                style: AppTypography.labelLarge.copyWith(
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 40),
         ElevatedButton(
