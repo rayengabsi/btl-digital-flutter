@@ -76,6 +76,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     ref.listen(authControllerProvider, (previous, next) {
       if (next case AuthAuthenticated()) {
+        _retainedView = null;
+        _otpController.clear();
         context.goNamed('home');
       } else if (next case AuthError(:final message, :final details)) {
         final errorText = details.isNotEmpty
@@ -98,8 +100,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final isLoading = authState is AuthLoading;
     final viewState = _resolveViewState(authState);
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
+    final isInMfaFlow =
+        viewState is AuthCredentialsVerified || viewState is AuthMfaOtpSent;
+
+    return PopScope(
+      canPop: !isInMfaFlow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || !isInMfaFlow) return;
+        _retainedView = null;
+        _otpController.clear();
+        ref.read(authControllerProvider.notifier).reset();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -118,6 +131,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           },
         ),
       ),
+      ),
     );
   }
 
@@ -129,6 +143,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         _retainedView = state;
         return state;
       case AuthMfaOtpSent():
+        if (_retainedView case AuthMfaOtpSent(:final maskedDestination)) {
+          if (maskedDestination != state.maskedDestination) {
+            _otpController.clear();
+          }
+        }
         _retainedView = state;
         return state;
       case AuthInitial():
