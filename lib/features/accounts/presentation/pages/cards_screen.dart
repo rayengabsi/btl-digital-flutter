@@ -4,17 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../home/presentation/utils/amount_formatter.dart';
 import '../../../home/presentation/widgets/btl_bottom_nav.dart';
 import '../../data/models/account_transaction_model.dart';
-import '../../data/models/customer_account_model.dart';
-import '../providers/accounts_provider.dart';
-
-
-// ─── Card image assets ────────────────────────────────────────────────────────
-const _cardImages = [
-  'assets/images/Cards/card_first.png',
-  'assets/images/Cards/card_second.png',
-];
+import '../../data/models/payment_card_model.dart';
+import '../providers/cards_providers.dart';
+import '../widgets/bank_card.dart';
+import '../widgets/card_details_sheet.dart';
 
 class CardsScreen extends ConsumerStatefulWidget {
   const CardsScreen({super.key, this.onNavTap});
@@ -31,9 +27,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
   late final PageController _pageCtrl;
   int _activeCardIndex = 0;
 
-  late AnimationController _txFadeCtrl;
-  late Animation<double> _txFade;
-
   late AnimationController _entryFadeCtrl;
   late Animation<double> _entryFade;
   late AnimationController _entrySlideCtrl;
@@ -45,13 +38,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
 
     _pageCtrl = PageController(viewportFraction: 0.80);
     _pageCtrl.addListener(_onPageScroll);
-
-    _txFadeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-      value: 1.0,
-    );
-    _txFade = CurvedAnimation(parent: _txFadeCtrl, curve: Curves.easeInOut);
 
     _entryFadeCtrl = AnimationController(
       vsync: this,
@@ -76,7 +62,6 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
   void dispose() {
     _pageCtrl.removeListener(_onPageScroll);
     _pageCtrl.dispose();
-    _txFadeCtrl.dispose();
     _entryFadeCtrl.dispose();
     _entrySlideCtrl.dispose();
     super.dispose();
@@ -86,35 +71,63 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
     final page = _pageCtrl.page ?? 0;
     final newIndex = page.round();
     if (newIndex != _activeCardIndex) {
-      _switchCard(newIndex);
+      setState(() => _activeCardIndex = newIndex);
     }
   }
 
-  Future<void> _switchCard(int newIndex) async {
-    await _txFadeCtrl.reverse();
-    setState(() => _activeCardIndex = newIndex);
-    await _txFadeCtrl.forward();
+  void _showDemoMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
-  void _fetchTransactionsForAccount(CustomerAccount account) {
-    final now = DateTime.now();
-    final from = now.subtract(const Duration(days: 365));
-    final fromStr =
-        "${from.year}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}";
-    final toStr =
-        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  Future<void> _onFreezeAction(PaymentCard card) async {
+    final frozen = ref.read(frozenCardsProvider);
+    if (frozen.contains(card.id)) {
+      toggleFrozenCard(ref, card.id);
+      return;
+    }
 
-    ref.read(transactionSearchNotifierProvider.notifier).startSearch(
-          iban: account.iban,
-          fromDate: fromStr,
-          toDate: toStr,
-        );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Freeze card?'),
+        content: const Text(
+          'This is a demo/static card. Freezing only updates the local '
+          'status — no bank action is performed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Freeze'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      toggleFrozenCard(ref, card.id);
+    }
+  }
+
+  void _openDetails(PaymentCard card) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CardDetailsSheet(card: card),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-    final accountsAsync = ref.watch(customerAccountsProvider);
+    final cardsAsync = ref.watch(cardsProvider);
+    final frozenIds = ref.watch(frozenCardsProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -134,40 +147,35 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
                 child: Column(
                   children: [
                     Expanded(
-                      child: accountsAsync.when(
-                        data: (accounts) {
-                          if (accounts.isNotEmpty &&
-                              _activeCardIndex < accounts.length) {
-                            final currentIban = accounts[_activeCardIndex].iban;
-                            final currentTxState =
-                                ref.watch(transactionSearchNotifierProvider);
-
-                            if (currentTxState.iban != currentIban &&
-                                !currentTxState.isLoading) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _fetchTransactionsForAccount(accounts[_activeCardIndex]);
-                              });
-                            }
-                          }
-
-                          return CustomScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            slivers: [
-                              SliverToBoxAdapter(child: _buildHeader(context)),
-                              SliverToBoxAdapter(
-                                child: _buildCardCarousel(accounts),
+                      child: cardsAsync.when(
+                        data: (cards) => CustomScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          slivers: [
+                            SliverToBoxAdapter(child: _buildHeader(context)),
+                            SliverToBoxAdapter(
+                              child: _buildCardCarousel(
+                                cards,
+                                frozenIds,
                               ),
-                              SliverToBoxAdapter(
-                                child: _buildTransactionsSection(accounts),
-                              ),
-                              const SliverToBoxAdapter(
-                                child: SizedBox(height: 112),
-                              ),
-                            ],
-                          );
-                        },
+                            ),
+                            SliverToBoxAdapter(
+                              child: _buildQuickActions(cards, frozenIds),
+                            ),
+                            SliverToBoxAdapter(
+                              child: _buildDepositButton(),
+                            ),
+                            SliverToBoxAdapter(
+                              child: _buildTransactionsSection(),
+                            ),
+                            const SliverToBoxAdapter(
+                              child: SizedBox(height: 112),
+                            ),
+                          ],
+                        ),
                         loading: () => const Center(
-                          child: CircularProgressIndicator(color: AppColors.primaryGreen),
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryGreen,
+                          ),
                         ),
                         error: (err, stack) => Center(
                           child: Padding(
@@ -175,16 +183,20 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.error_outline_rounded,
-                                    size: 48, color: AppColors.primaryRed),
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 48,
+                                  color: AppColors.primaryRed,
+                                ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Unable to load customer accounts',
+                                  'Unable to load cards',
                                   style: AppTypography.h3,
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton(
-                                  onPressed: () => ref.refresh(customerAccountsProvider),
+                                  onPressed: () =>
+                                      ref.refresh(cardsProvider),
                                   child: const Text('Retry'),
                                 ),
                               ],
@@ -224,31 +236,39 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'My Accounts & Cards',
-                style: AppTypography.h2.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'My Cards',
+                  style: AppTypography.h2.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Live accounts and transactions',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 2),
+                Text(
+                  'Manage your cards and accounts',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
           _CircleBtn(
-            onTap: () => ref.refresh(customerAccountsProvider),
+            onTap: () {
+              _showDemoMessage('Adding a new card is not available in the '
+                  'demo version yet.');
+            },
             child: const Icon(
-              Icons.refresh_rounded,
+              Icons.add_rounded,
               color: AppColors.textPrimary,
-              size: 22,
+              size: 24,
             ),
           ),
         ],
@@ -256,20 +276,19 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
     );
   }
 
-  Widget _buildCardCarousel(List<CustomerAccount> accounts) {
-    final count = accounts.isEmpty ? 1 : accounts.length;
+  Widget _buildCardCarousel(List<PaymentCard> cards, Set<String> frozenIds) {
+    final count = cards.isEmpty ? 1 : cards.length;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 8),
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
       child: SizedBox(
-        height: 220,
+        height: 234,
         child: PageView.builder(
           controller: _pageCtrl,
           itemCount: count,
           physics: const BouncingScrollPhysics(),
           itemBuilder: (context, index) {
-            final account = accounts.isNotEmpty ? accounts[index] : null;
-            final cardImg = _cardImages[index % _cardImages.length];
+            final card = cards.isNotEmpty ? cards[index] : null;
 
             return AnimatedBuilder(
               animation: _pageCtrl,
@@ -278,81 +297,25 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
                 if (_pageCtrl.position.hasContentDimensions) {
                   final page = _pageCtrl.page ?? 0.0;
                   final diff = (page - index).abs().clamp(0.0, 1.0);
-                  scale = 1.0 - (diff * 0.04);
+                  scale = 1.0 - (diff * 0.045);
                 }
                 return Transform.scale(scale: scale, child: child);
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(22),
-                      child: Image.asset(cardImg, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
-                    ),
-                    if (account != null)
-                      Positioned(
-                        left: 20,
-                        top: 20,
-                        right: 20,
-                        bottom: 20,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  account.productName,
-                                  style: AppTypography.labelLarge.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    account.currencyId,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Available Balance',
-                                  style: AppTypography.bodySmall.copyWith(color: Colors.white70),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  account.availableBalance != null
-                                      ? '${account.currencyId} ${account.availableBalance!.toStringAsFixed(3)}'
-                                      : 'N/A',
-                                  style: AppTypography.h2.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              account.iban,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: Colors.white70,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ],
-                        ),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: BankCard(
+                  card: card ??
+                      const PaymentCard(
+                        id: 'CARD-0000',
+                        bankName: 'BTL Bank',
+                        cardType: 'VISA',
+                        cardHolder: '',
+                        maskedNumber: '',
+                        fullNumber: '',
+                        expiry: '',
+                        balance: 0,
                       ),
-                  ],
+                  isFrozen: card != null && frozenIds.contains(card.id),
                 ),
               ),
             );
@@ -362,11 +325,74 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
     );
   }
 
-  Widget _buildTransactionsSection(List<CustomerAccount> accounts) {
-    final txState = ref.watch(transactionSearchNotifierProvider);
+  Widget _buildQuickActions(List<PaymentCard> cards, Set<String> frozenIds) {
+    if (cards.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final active = cards[_activeCardIndex.clamp(0, cards.length - 1)];
+    final activeFrozen = frozenIds.contains(active.id);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      child: Row(
+        children: [
+          _QuickAction(
+            icon: Icons.north_east_rounded,
+            label: 'Send',
+            onTap: () => _showDemoMessage(
+                'Send is not connected to the backend yet.'),
+          ),
+          _QuickAction(
+            icon: Icons.south_west_rounded,
+            label: 'Request',
+            onTap: () => _showDemoMessage(
+                'Request is not connected to the backend yet.'),
+          ),
+          _QuickAction(
+            icon: Icons.ac_unit_rounded,
+            label: activeFrozen ? 'Unfreeze' : 'Freeze',
+            onTap: () => _onFreezeAction(active),
+          ),
+          _QuickAction(
+            icon: Icons.visibility_outlined,
+            label: 'View Details',
+            onTap: () => _openDetails(active),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDepositButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      child: GestureDetector(
+        onTap: () => _showDemoMessage(
+            'Deposit is not connected to the backend yet.'),
+        child: Container(
+          width: double.infinity,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.primaryGreen,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'Deposit',
+            style: AppTypography.buttonLarge.copyWith(
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionsSection() {
+    final txAsync = ref.watch(cardTransactionsProvider);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -385,104 +411,64 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Recent Statement',
-                    style: AppTypography.h6.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
+                  Expanded(
+                    child: Text(
+                      'Recent Transactions',
+                      style: AppTypography.h6.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (txState.isLoading)
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen),
-                    ),
+                  const Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.textPrimary,
+                    size: 22,
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (txState.errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: 18,
-                            color: AppColors.primaryRed,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              txState.errorMessage!,
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.primaryRed,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => ref
-                            .read(transactionSearchNotifierProvider.notifier)
-                            .loadNextPage(),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              else if (txState.transactions.isEmpty && !txState.isLoading)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+              const SizedBox(height: 12),
+              txAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(
-                    child: Text(
-                      'No transactions found for this period.',
-                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primaryGreen,
+                      ),
                     ),
                   ),
-                )
-              else
-                FadeTransition(
-                  opacity: _txFade,
-                  child: Column(
-                    children: [
-                      ...txState.transactions.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final tx = entry.value;
-                        return Column(
-                          children: [
-                            _RealTxRow(tx: tx),
-                            if (i < txState.transactions.length - 1)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                child: Divider(height: 1, color: AppColors.divider),
-                              ),
-                          ],
-                        );
-                      }),
-                      if (txState.transactions.length < txState.totalSize)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: TextButton(
-                            onPressed: () {
-                              ref
-                                  .read(transactionSearchNotifierProvider.notifier)
-                                  .loadNextPage();
-                            },
-                            child: const Text('Load More Transactions'),
-                          ),
-                        ),
-                    ],
+                ),
+                error: (err, stack) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Unable to load transactions.',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
+                data: (transactions) => Column(
+                  children: [
+                    for (var i = 0; i < transactions.length; i++) ...[
+                      const SizedBox(height: 4),
+                      _TxRow(transaction: transactions[i]),
+                      if (i < transactions.length - 1) ...[
+                        const SizedBox(height: 12),
+                        Divider(height: 1, color: AppColors.divider),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -491,40 +477,88 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
   }
 }
 
-class _RealTxRow extends StatelessWidget {
-  const _RealTxRow({required this.tx});
+// ─── Quick action ─────────────────────────────────────────────────────────────
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
-  final AccountTransaction tx;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isCredit = tx.creditAmount != null && tx.creditAmount! > 0;
-    final amountText = isCredit
-        ? '+${tx.creditAmount!.toStringAsFixed(3)}'
-        : tx.debitAmount != null
-            ? '-${tx.debitAmount!.toStringAsFixed(3)}'
-            : '0.000';
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: AppColors.primaryGreen, size: 24),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-    final title = tx.narratives.isNotEmpty ? tx.narratives.first : tx.transactionCode;
+// ─── Transaction row ──────────────────────────────────────────────────────────
+class _TxRow extends StatelessWidget {
+  const _TxRow({required this.transaction});
+
+  final AccountTransaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCredit =
+        transaction.creditAmount != null && transaction.creditAmount! > 0;
+    final rawAmount = isCredit
+        ? (transaction.creditAmount ?? 0.0)
+        : (transaction.debitAmount ?? 0.0);
+    final sign = isCredit ? '+' : '-';
+    final amountText = '$sign${formatAmountWithComma(rawAmount)} TND';
+    final title = transaction.narratives.isNotEmpty
+        ? transaction.narratives.first
+        : transaction.transactionCode;
 
     return Row(
       children: [
         Container(
-          width: 46,
-          height: 46,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color: isCredit
-                ? AppColors.primaryGreen.withValues(alpha: 0.08)
-                : AppColors.textSecondary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
+            color: AppColors.lightBackground,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            isCredit ? Icons.south_west_rounded : Icons.north_east_rounded,
-            size: 22,
-            color: isCredit ? AppColors.primaryGreen : AppColors.textSecondary,
+            _iconFor(transaction),
+            size: 20,
+            color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,17 +568,17 @@ class _RealTxRow extends StatelessWidget {
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
-                '${tx.bookingDate} • ${tx.transactionReference}',
+                transaction.bookingDate,
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -553,9 +587,9 @@ class _RealTxRow extends StatelessWidget {
         Text(
           amountText,
           style: AppTypography.bodyMedium.copyWith(
-            color: isCredit ? AppColors.primaryGreen : const Color(0xFF111827),
+            color: isCredit ? AppColors.primaryGreen : AppColors.primaryRed,
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: 13,
           ),
         ),
       ],
@@ -563,6 +597,24 @@ class _RealTxRow extends StatelessWidget {
   }
 }
 
+IconData _iconFor(AccountTransaction transaction) {
+  final isCredit =
+      transaction.creditAmount != null && transaction.creditAmount! > 0;
+  switch (transaction.iconName) {
+    case 'salary':
+      return Icons.south_west_rounded;
+    case 'receipt':
+      return Icons.receipt_long_rounded;
+    case 'shopping':
+      return Icons.shopping_cart_rounded;
+    case 'mobile':
+      return Icons.phone_android_rounded;
+    default:
+      return isCredit ? Icons.south_west_rounded : Icons.north_east_rounded;
+  }
+}
+
+// ─── Reusable circle button ───────────────────────────────────────────────────
 class _CircleBtn extends StatefulWidget {
   const _CircleBtn({required this.onTap, required this.child});
   final VoidCallback onTap;
