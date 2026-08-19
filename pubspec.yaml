@@ -62,3 +62,4 @@ flutter:
     - assets/cards/
     - assets/animations/
     - assets/.env
+    - assets/fonts/
