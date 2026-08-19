@@ -8,11 +8,7 @@ import '../../data/models/payment_card_model.dart';
 /// graphics). No widgets or text are drawn on top of it. The card keeps its
 /// original artwork, colors, proportions and rounded corners.
 class BankCard extends StatelessWidget {
-  const BankCard({
-    super.key,
-    required this.card,
-    this.isFrozen = false,
-  });
+  const BankCard({super.key, required this.card, this.isFrozen = false});
 
   final PaymentCard card;
   final bool isFrozen;
@@ -32,25 +28,7 @@ class BankCard extends StatelessWidget {
       image = ColorFiltered(colorFilter: _grayscale, child: image);
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: AspectRatio(
-        aspectRatio: _aspectRatio,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: image,
-        ),
-      ),
-    );
+    return AspectRatio(aspectRatio: _aspectRatio, child: image);
   }
 
   static const ColorFilter _grayscale = ColorFilter.matrix(<double>[

@@ -36,7 +36,7 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
   void initState() {
     super.initState();
 
-    _pageCtrl = PageController(viewportFraction: 0.80);
+    _pageCtrl = PageController(viewportFraction: 0.9);
     _pageCtrl.addListener(_onPageScroll);
 
     _entryFadeCtrl = AnimationController(
