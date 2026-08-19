@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../accounts/data/models/account_transaction_model.dart';
-import '../../../accounts/presentation/providers/accounts_provider.dart';
+import '../providers/home_providers.dart';
+import '../utils/amount_formatter.dart';
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
 class TransactionsCard extends ConsumerWidget {
@@ -12,7 +13,7 @@ class TransactionsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final txAsync = ref.watch(recentTransactionsProvider);
+    final txAsync = ref.watch(homeRecentTransactionsProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -33,14 +34,37 @@ class TransactionsCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Recent Transactions',
-              style: AppTypography.h3.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Transactions',
+                  style: AppTypography.h5.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'All',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.primaryGreen,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             txAsync.when(
               loading: () => const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -56,7 +80,7 @@ class TransactionsCard extends ConsumerWidget {
                 ),
               ),
               error: (err, stack) => _ErrorState(
-                onRetry: () => ref.invalidate(recentTransactionsProvider),
+                onRetry: () => ref.invalidate(homeRecentTransactionsProvider),
               ),
               data: (transactions) {
                 if (transactions.isEmpty) {
@@ -76,10 +100,10 @@ class TransactionsCard extends ConsumerWidget {
                 return Column(
                   children: [
                     for (var i = 0; i < transactions.length; i++) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _TransactionRow(transaction: transactions[i]),
                       if (i < transactions.length - 1) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         Divider(height: 1, color: AppColors.divider),
                       ],
                     ],
@@ -132,11 +156,11 @@ class _TransactionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCredit =
         transaction.creditAmount != null && transaction.creditAmount! > 0;
-    final amountText = isCredit
-        ? '+${transaction.creditAmount!.toStringAsFixed(3)}'
-        : transaction.debitAmount != null
-            ? '-${transaction.debitAmount!.toStringAsFixed(3)}'
-            : '0.000';
+    final rawAmount = isCredit
+        ? (transaction.creditAmount ?? 0.0)
+        : (transaction.debitAmount ?? 0.0);
+    final sign = isCredit ? '+' : '-';
+    final amountText = '$sign${formatAmountWithComma(rawAmount)} TND';
     final title = transaction.narratives.isNotEmpty
         ? transaction.narratives.first
         : transaction.transactionCode;
@@ -144,41 +168,39 @@ class _TransactionRow extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 46,
-          height: 46,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color: isCredit
-                ? AppColors.primaryGreen.withValues(alpha: 0.08)
-                : AppColors.textSecondary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
+            color: AppColors.lightBackground,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            isCredit ? Icons.south_west_rounded : Icons.north_east_rounded,
-            size: 22,
-            color: isCredit ? AppColors.primaryGreen : AppColors.textSecondary,
+            _iconFor(transaction),
+            size: 20,
+            color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: AppTypography.bodyLarge.copyWith(
+                style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
               Text(
                 transaction.bookingDate,
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -187,14 +209,31 @@ class _TransactionRow extends StatelessWidget {
         Text(
           amountText,
           style: AppTypography.bodyMedium.copyWith(
-            color: isCredit
-                ? AppColors.primaryGreen
-                : AppColors.textPrimary,
+            color: isCredit ? AppColors.primaryGreen : AppColors.primaryRed,
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: 13,
           ),
         ),
       ],
     );
+  }
+}
+
+IconData _iconFor(AccountTransaction transaction) {
+  final isCredit =
+      transaction.creditAmount != null && transaction.creditAmount! > 0;
+  switch (transaction.iconName) {
+    case 'salary':
+      return Icons.south_west_rounded;
+    case 'receipt':
+      return Icons.receipt_long_rounded;
+    case 'shopping':
+      return Icons.shopping_cart_rounded;
+    case 'mobile':
+      return Icons.phone_android_rounded;
+    default:
+      return isCredit
+          ? Icons.south_west_rounded
+          : Icons.north_east_rounded;
   }
 }

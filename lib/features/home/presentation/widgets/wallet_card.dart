@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../accounts/presentation/providers/accounts_provider.dart';
+import '../providers/home_providers.dart';
+import '../utils/amount_formatter.dart';
 
 class WalletCard extends ConsumerStatefulWidget {
   const WalletCard({super.key, this.onTransfer});
 
-  /// Invoked when the user taps Transfer. If null the buttons are hidden.
+  /// Invoked when the user taps the primary (Deposit) button.
+  /// If null the buttons are hidden.
   final VoidCallback? onTransfer;
 
   @override
@@ -24,7 +26,7 @@ class _WalletCardState extends ConsumerState<WalletCard> {
 
   @override
   Widget build(BuildContext context) {
-    final accountsAsync = ref.watch(customerAccountsProvider);
+    final accountAsync = ref.watch(homePrimaryAccountProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -50,7 +52,7 @@ class _WalletCardState extends ConsumerState<WalletCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Primary Account Balance',
+                  'Wallet Balance',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.primaryGreen,
                     fontWeight: FontWeight.w500,
@@ -71,14 +73,14 @@ class _WalletCardState extends ConsumerState<WalletCard> {
             const SizedBox(height: 10),
 
             // ─── Balance ──────────────────────────────────────────────
-            accountsAsync.when(
-              data: (accounts) {
-                final primary = accounts.isNotEmpty ? accounts.first : null;
-                final currency = primary?.currencyId ?? 'TND';
-                final balance = primary?.availableBalance ?? 0.0;
-                final wholePart = balance.floor().toString();
-                final decimalPart =
-                    ((balance - balance.floor()) * 1000).round().toString().padLeft(3, '0');
+            accountAsync.when(
+              data: (account) {
+                final currency = account.currencyId;
+                final balance = account.availableBalance ?? 0.0;
+                final formatted = formatAmountWithComma(balance);
+                final dotIndex = formatted.indexOf('.');
+                final wholePart = formatted.substring(0, dotIndex);
+                final decimalPart = formatted.substring(dotIndex + 1);
 
                 if (_balanceHidden) {
                   return Padding(
@@ -152,9 +154,41 @@ class _WalletCardState extends ConsumerState<WalletCard> {
 
             ),
 
+            const SizedBox(height: 20),
+
+            // ─── Quick actions ───────────────────────────────────────
+            Row(
+              children: const [
+                Expanded(
+                  child: _QuickAction(
+                    icon: Icons.north_east_rounded,
+                    label: 'Send',
+                  ),
+                ),
+                Expanded(
+                  child: _QuickAction(
+                    icon: Icons.south_west_rounded,
+                    label: 'Request',
+                  ),
+                ),
+                Expanded(
+                  child: _QuickAction(
+                    icon: Icons.phone_android_rounded,
+                    label: 'Top Up',
+                  ),
+                ),
+                Expanded(
+                  child: _QuickAction(
+                    icon: Icons.qr_code_scanner_rounded,
+                    label: 'Scan',
+                  ),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 24),
 
-            // ─── Transfer button ─────────────────────────────────────
+            // ─── Main button ─────────────────────────────────────────
             GestureDetector(
               onTap: widget.onTransfer ?? () {},
               child: Container(
@@ -166,7 +200,7 @@ class _WalletCardState extends ConsumerState<WalletCard> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'Transfer',
+                  'Deposit',
                   style: AppTypography.buttonLarge.copyWith(
                     color: Colors.white,
                   ),
@@ -176,6 +210,40 @@ class _WalletCardState extends ConsumerState<WalletCard> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.primaryGreen.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: AppColors.primaryGreen, size: 24),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 }

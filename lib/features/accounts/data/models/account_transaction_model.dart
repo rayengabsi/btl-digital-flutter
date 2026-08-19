@@ -82,6 +82,7 @@ class AccountTransaction {
     this.debitAmount,
     this.creditAmount,
     required this.narratives,
+    this.iconName,
   });
 
   final String accountId;
@@ -93,6 +94,10 @@ class AccountTransaction {
   final double? debitAmount;
   final double? creditAmount;
   final List<String> narratives;
+
+  /// Optional hint for the icon shown next to the transaction (used by the
+  /// Home mock data). The real API response does not include this field.
+  final String? iconName;
 
   factory AccountTransaction.fromJson(Map<String, dynamic> json) {
     final list = json['narratives'] as List? ?? [];
@@ -106,6 +111,7 @@ class AccountTransaction {
       debitAmount: (json['debitAmount'] as num?)?.toDouble(),
       creditAmount: (json['creditAmount'] as num?)?.toDouble(),
       narratives: list.map((e) => e.toString()).toList(),
+      iconName: json['iconName'] as String?,
     );
   }
 }
