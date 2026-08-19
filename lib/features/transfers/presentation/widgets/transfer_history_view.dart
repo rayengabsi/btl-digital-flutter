@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/illustrated_state_card.dart';
 import '../../data/models/transfer_models.dart';
 import '../providers/transfers_provider.dart';
 
@@ -60,9 +61,9 @@ class _TransferHistoryViewState extends ConsumerState<TransferHistoryView> {
               ),
             )
           else if (state.errorMessage != null && state.demands.isEmpty)
-            SliverToBoxAdapter(
-              child: _ErrorState(
-                message: state.errorMessage!,
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _PermissionState(
                 onRetry: () => ref
                     .read(transferHistoryControllerProvider.notifier)
                     .loadFirstPage(),
@@ -314,28 +315,20 @@ class _LoadMoreIndicator extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
+class _PermissionState extends StatelessWidget {
+  const _PermissionState({required this.onRetry});
 
-  final String message;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.primaryRed),
-          const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center, style: AppTypography.bodyMedium),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
+    return IllustratedStateCard(
+      icon: Icons.verified_user_outlined,
+      title: 'Transfer history unavailable',
+      message: "You don't currently have access to view your transfer history.",
+      caption: 'Please check your account permissions or try again later.',
+      actionLabel: 'Try Again',
+      onAction: onRetry,
     );
   }
 }

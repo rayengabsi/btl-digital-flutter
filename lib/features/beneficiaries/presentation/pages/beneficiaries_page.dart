@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/illustrated_state_card.dart';
 import '../../data/models/beneficiary_model.dart';
 import '../providers/beneficiaries_provider.dart';
 
@@ -89,20 +90,13 @@ class BeneficiariesPage extends ConsumerWidget {
           loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primaryGreen),
           ),
-          error: (err, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.primaryRed),
-                const SizedBox(height: 12),
-                Text('Failed to load beneficiaries', style: AppTypography.h3),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(beneficiariesListProvider),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          error: (err, stack) => IllustratedStateCard(
+            icon: Icons.verified_user_outlined,
+            title: 'Beneficiaries unavailable',
+            message: "We couldn't load your beneficiaries right now.",
+            caption: 'Please check your account permissions or try again later.',
+            actionLabel: 'Try Again',
+            onAction: () => ref.invalidate(beneficiariesListProvider),
           ),
         ),
       ),
