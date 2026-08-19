@@ -6,8 +6,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../accounts/data/models/customer_account_model.dart';
+import '../../../beneficiaries/data/models/beneficiary_model.dart';
+import '../providers/transfer_mock_providers.dart';
 import '../providers/transfers_provider.dart';
 import '../providers/transfers_state.dart';
+import 'beneficiary_selector.dart';
 import 'source_account_selector.dart';
 
 class TransferFormView extends ConsumerStatefulWidget {
@@ -19,15 +22,23 @@ class TransferFormView extends ConsumerStatefulWidget {
 
 class _TransferFormViewState extends ConsumerState<TransferFormView> {
   final _formKey = GlobalKey<FormState>();
-  final _creditCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
   final _detailCtrl = TextEditingController();
 
   CustomerAccount? _sourceAccount;
+  Beneficiary? _beneficiary;
+
+  @override
+  void initState() {
+    super.initState();
+    final accounts = ref.read(mockTransferAccountsProvider);
+    if (accounts.isNotEmpty) {
+      _sourceAccount = accounts.first;
+    }
+  }
 
   @override
   void dispose() {
-    _creditCtrl.dispose();
     _amountCtrl.dispose();
     _detailCtrl.dispose();
     super.dispose();
@@ -39,6 +50,11 @@ class _TransferFormViewState extends ConsumerState<TransferFormView> {
     final source = _sourceAccount;
     if (source == null) {
       _showSnack('Please select an account to debit from.');
+      return;
+    }
+    final beneficiary = _beneficiary;
+    if (beneficiary == null) {
+      _showSnack('Please select a beneficiary.');
       return;
     }
     if (_amount <= 0) {
@@ -59,7 +75,7 @@ class _TransferFormViewState extends ConsumerState<TransferFormView> {
       debitAccountId: source.accountId,
       debitCurrency: source.currencyId,
       debitAmount: _amount,
-      creditAccountId: _creditCtrl.text.trim(),
+      creditAccountId: beneficiary.ribNumber,
       paymentDetail: _detailCtrl.text.trim(),
       debitIban: source.iban,
       debitProductName: source.productName,
@@ -80,6 +96,9 @@ class _TransferFormViewState extends ConsumerState<TransferFormView> {
 
   @override
   Widget build(BuildContext context) {
+    final accounts = ref.watch(mockTransferAccountsProvider);
+    final beneficiaries = ref.watch(mockBeneficiariesProvider);
+
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
@@ -92,6 +111,17 @@ class _TransferFormViewState extends ConsumerState<TransferFormView> {
             child: SourceAccountSelector(
               selected: _sourceAccount,
               onSelected: (a) => setState(() => _sourceAccount = a),
+              accounts: accounts,
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+            child: BeneficiarySelector(
+              beneficiaries: beneficiaries,
+              selected: _beneficiary,
+              onSelected: (b) => setState(() => _beneficiary = b),
             ),
           ),
         ),
@@ -110,33 +140,10 @@ class _TransferFormViewState extends ConsumerState<TransferFormView> {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
             child: Form(
               key: _formKey,
-              child: Column(
-                children: [
-                  _DetailField(
-                    label: 'Recipient Account ID',
-                    hint: 'e.g. 1089021207513',
-                    controller: _creditCtrl,
-                    keyboardType: TextInputType.number,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'Recipient account ID is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _DetailField(
-                    label: 'Payment Details',
-                    hint: 'e.g. Transfer payment',
-                    controller: _detailCtrl,
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'Payment details are required';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
+              child: _DetailField(
+                label: 'Payment Details',
+                hint: 'e.g. Transfer payment',
+                controller: _detailCtrl,
               ),
             ),
           ),
@@ -162,16 +169,14 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: AppTypography.h6.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: AppTypography.h6.copyWith(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -318,22 +323,16 @@ class _DetailField extends StatelessWidget {
     required this.label,
     required this.hint,
     required this.controller,
-    required this.validator,
-    this.keyboardType = TextInputType.text,
   });
 
   final String label;
   final String hint;
   final TextEditingController controller;
-  final String? Function(String?)? validator;
-  final TextInputType keyboardType;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
       style: AppTypography.bodyMedium.copyWith(
         color: AppColors.textPrimary,
         fontWeight: FontWeight.w500,

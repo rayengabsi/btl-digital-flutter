@@ -12,18 +12,25 @@ class SourceAccountSelector extends ConsumerWidget {
     super.key,
     required this.selected,
     required this.onSelected,
+    this.accounts,
   });
 
   final CustomerAccount? selected;
   final ValueChanged<CustomerAccount> onSelected;
 
+  /// Optional pre-loaded accounts. When provided, the selector uses these
+  /// static values instead of fetching accounts from the backend.
+  final List<CustomerAccount>? accounts;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accountsAsync = ref.watch(customerAccountsProvider);
+    final accountsAsync = accounts != null
+        ? AsyncValue<List<CustomerAccount>>.data(accounts!)
+        : ref.watch(customerAccountsProvider);
 
     return GestureDetector(
       onTap: () async {
-        final account = await _showAccountPicker(context, ref, accountsAsync);
+        final account = await _showAccountPicker(context, accountsAsync);
         if (account != null) onSelected(account);
       },
       child: Container(
@@ -85,9 +92,8 @@ class SourceAccountSelector extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${_maskAccount(selected!.accountId)} • Available '
-                      '${selected!.availableBalance?.toStringAsFixed(3) ?? 'N/A'} '
-                      '${selected!.currencyId}',
+                      '${selected!.currencyId} '
+                      '${selected!.availableBalance?.toStringAsFixed(2) ?? 'N/A'}',
                       style: AppTypography.labelSmall.copyWith(
                         color: AppColors.primaryGreen,
                         fontWeight: FontWeight.w600,
@@ -109,7 +115,6 @@ class SourceAccountSelector extends ConsumerWidget {
 
   Future<CustomerAccount?> _showAccountPicker(
     BuildContext context,
-    WidgetRef ref,
     AsyncValue<List<CustomerAccount>> accountsAsync,
   ) {
     return showModalBottomSheet<CustomerAccount>(
@@ -118,11 +123,6 @@ class SourceAccountSelector extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => _AccountPickerSheet(accounts: accountsAsync),
     );
-  }
-
-  String _maskAccount(String accountId) {
-    if (accountId.length <= 4) return accountId;
-    return '••••${accountId.substring(accountId.length - 4)}';
   }
 }
 

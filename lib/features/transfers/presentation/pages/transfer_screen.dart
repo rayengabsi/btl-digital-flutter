@@ -35,14 +35,24 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
     final inFlow = transferState is! TransferIdle;
 
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(inFlow: inFlow),
-            Expanded(child: _buildBody(transferState)),
-          ],
-        ),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/dashboard_bg.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopBar(inFlow: inFlow),
+                Expanded(child: _buildBody(transferState)),
+              ],
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: BtlBottomNav(
         currentIndex: _navIndex,
