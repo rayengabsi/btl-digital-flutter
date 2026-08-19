@@ -34,12 +34,20 @@ void main() {
     expect(find.text('My Cards'), findsOneWidget);
     expect(find.text('Manage your cards and accounts'), findsOneWidget);
 
-    // Bank card content (carousel can build both cards).
-    expect(find.text('BTL Bank'), findsWidgets);
-    expect(find.text('VISA'), findsWidgets);
-    expect(find.text('RAYEN GABSI'), findsWidgets);
-    expect(find.text('12,450.80 TND'), findsWidgets);
-    expect(find.text('27,000.00 TND'), findsWidgets);
+    // Bank card is the existing asset image, no widget text overlays it.
+    expect(
+      find.byKey(const ValueKey('bank-card-image-CARD-4821')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('bank-card-image-CARD-7294')),
+      findsOneWidget,
+    );
+    // The artwork is an image — none of the card details are rendered as
+    // widget text on top of it.
+    expect(find.text('BTL Bank'), findsNothing);
+    expect(find.text('VISA'), findsNothing);
+    expect(find.text('RAYEN GABSI'), findsNothing);
 
     // Quick actions.
     expect(find.text('Send'), findsOneWidget);
@@ -80,6 +88,12 @@ void main() {
     expect(find.text('Available Balance'), findsOneWidget);
     expect(find.text('Copy'), findsOneWidget);
     expect(find.text('Show'), findsOneWidget);
+    // The card artwork is the asset image, metadata lives below it.
+    expect(
+      find.byKey(const ValueKey('bank-card-image-CARD-4821')),
+      findsWidgets,
+    );
+    expect(find.text('BTL Bank'), findsNothing);
   });
 
   testWidgets('Freeze action confirms via dialog and toggles to Unfreeze',

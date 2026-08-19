@@ -314,6 +314,7 @@ class _CardsScreenState extends ConsumerState<CardsScreen>
                         fullNumber: '',
                         expiry: '',
                         balance: 0,
+                        imagePath: 'assets/images/Cards/card_first.png',
                       ),
                   isFrozen: card != null && frozenIds.contains(card.id),
                 ),

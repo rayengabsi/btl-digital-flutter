@@ -13,6 +13,7 @@ class PaymentCard {
     required this.fullNumber,
     required this.expiry,
     required this.balance,
+    required this.imagePath,
     this.currency = 'TND',
   });
 
@@ -20,6 +21,10 @@ class PaymentCard {
   final String bankName;
   final String cardType;
   final String cardHolder;
+
+  /// Existing card artwork asset (the image already contains the full card
+  /// design — no widget text is drawn on top of it).
+  final String imagePath;
 
   /// Display value, e.g. '•••• •••• •••• 4821'.
   final String maskedNumber;

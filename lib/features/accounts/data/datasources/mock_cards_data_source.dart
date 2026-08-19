@@ -20,6 +20,7 @@ class MockCardsDataSource {
           expiry: '12/29',
           balance: 12450.80,
           currency: 'TND',
+          imagePath: 'assets/images/Cards/card_first.png',
         ),
         PaymentCard(
           id: 'CARD-7294',
@@ -31,6 +32,7 @@ class MockCardsDataSource {
           expiry: '08/28',
           balance: 27000.00,
           currency: 'TND',
+          imagePath: 'assets/images/Cards/card_second.png',
         ),
       ];
 

@@ -83,7 +83,7 @@ class _CardDetailsSheetState extends ConsumerState<CardDetailsSheet> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                BankCard(card: widget.card, isFrozen: isFrozen, height: 230),
+                BankCard(card: widget.card, isFrozen: isFrozen),
                 const SizedBox(height: 20),
                 _DetailRow(
                   title: 'Cardholder',
