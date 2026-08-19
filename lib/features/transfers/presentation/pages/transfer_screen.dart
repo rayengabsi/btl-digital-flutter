@@ -52,17 +52,22 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
               ],
             ),
           ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: BtlBottomNav(
+              currentIndex: _navIndex,
+              onTap: (i) {
+                if (widget.onNavTap != null) {
+                  widget.onNavTap!(i);
+                } else {
+                  setState(() => _navIndex = i);
+                }
+              },
+            ),
+          ),
         ],
-      ),
-      bottomNavigationBar: BtlBottomNav(
-        currentIndex: _navIndex,
-        onTap: (i) {
-          if (widget.onNavTap != null) {
-            widget.onNavTap!(i);
-          } else {
-            setState(() => _navIndex = i);
-          }
-        },
       ),
     );
   }
