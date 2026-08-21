@@ -66,7 +66,7 @@ class BtlDrawer extends ConsumerWidget {
                       title: 'Currency Exchange',
                       onTap: () {
                         Navigator.of(context).pop();
-                        context.go('/currencies');
+                        context.push('/currencies');
                       },
                     ),
 

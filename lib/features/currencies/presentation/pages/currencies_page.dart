@@ -204,15 +204,15 @@ class _RateRow extends StatelessWidget {
           Text(
             _fmt(rate.buyMarket),
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+              color: AppColors.primaryGreen,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(width: 24),
           Text(
             _fmt(rate.sellMarket),
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.primaryGreen,
+              color: AppColors.secondaryGreen,
               fontWeight: FontWeight.w700,
             ),
           ),
